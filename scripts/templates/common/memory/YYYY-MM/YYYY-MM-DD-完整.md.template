@@ -1,0 +1,30 @@
+# {{DATE}} Durable Memory
+
+## 工作记录
+
+### Agent 创建
+
+- **Agent 名称**：{{AGENT_NAME}}
+- **Agent ID**：{{AGENT_ID}}
+- **模板**：{{TEMPLATE}}
+- **模型**：{{MODEL}}
+- **已安装技能**：{{SKILLS_COUNT}} 个
+
+### 创建决策
+
+- 使用 agent-creator v3.0 创建
+- 遵循 openclaw-core-files-architect 质量标准
+- 核心文件质量验证：{{QUALITY_SCORE}}/10
+
+---
+
+## 待跟进事项
+
+- [ ] 配置飞书机器人（如需要）
+- [ ] 自定义人格设定（如需要）
+- [ ] 安装额外技能（如需要）
+
+---
+
+*创建日期：{{CREATION_DATE}}*
+*创建工具：agent-creator v3.0*

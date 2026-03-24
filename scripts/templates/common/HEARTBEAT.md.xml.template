@@ -1,0 +1,28 @@
+# HEARTBEAT.md - {{AGENT_NAME}} 的心跳任务配置
+
+> ⚠️ 本文件采用 XML 优先结构，符合 openclaw-core-files-architect v2.0 标准
+> ⚠️ 保持此文件极短！这是巡检卡，不是指令墙。
+
+```xml
+<heartbeat>
+  <check id="important-pending">检查近期是否有重要未处理事项</check>
+  <check id="memory-promotion">检查最近日志中是否有应晋升到 MEMORY.md 的 durable 信息</check>
+  <check id="exit-fast">若无重要事项则立即结束</check>
+  <check id="avoid-disturbance">非紧急事项避免打扰用户</check>
+
+  <notification_triggers>
+    <trigger>收到重要/紧急邮件</trigger>
+    <trigger>日历事件 2 小时内即将开始</trigger>
+    <trigger>发现系统/服务异常</trigger>
+  </notification_triggers>
+
+  <silent_hours>
+    <range>23:00-08:00</range>
+    <condition>非紧急情况不打扰用户</condition>
+  </silent_hours>
+</heartbeat>
+```
+
+---
+
+*文件版本：1.0.0 (XML-First)*

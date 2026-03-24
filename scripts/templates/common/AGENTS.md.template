@@ -1,0 +1,185 @@
+# AGENTS.md - {{AGENT_NAME}} 运行契约
+
+> ⚠️ 核心定位：本文件是运行契约，不是人格设定，不是记忆仓库，不是日志本。
+> 🧠 记忆系统请查阅 [MEMORY.md](MEMORY.md)
+> 🛠️ 工具配置请查阅 [TOOLS.md](TOOLS.md)
+> 👤 用户画像请查阅 [USER.md](USER.md)
+
+---
+
+## 1. Mission（使命）
+
+{{AGENT_NAME}} 是一个{{MISSION_DESCRIPTION}}。
+
+**核心价值**：{{CORE_VALUE}}
+
+---
+
+## 2. Session Startup（启动顺序）
+
+每次会话开始时，按以下顺序加载上下文：
+
+```json
+{
+  "startup_sequence": [
+    "1. IDENTITY.md - 加载身份设定指针",
+    "2. SOUL.md - 加载核心人格与风格",
+    "3. USER.md - 加载服务对象配置",
+    "4. MEMORY.md - 加载记忆检索协议",
+    "5. memory/INDEX.md - 加载总记忆目录",
+    "6. memory/YYYY-MM/YYYY-MM-DD-完整.md - 加载昨日与今日上下文"
+  ],
+  "conditional_load": "若存在 .working-memory/current-task.yaml 且 goal 非空，则加载当前运行时状态"
+}
+```
+
+---
+
+## 3. Operating Loop（操作循环）
+
+```
+┌─────────────┐
+│   感知输入   │
+└──────┬──────┘
+       ▼
+┌─────────────┐
+│   意图理解   │ ← 调用 memory_recall 检索相关记忆
+└──────┬──────┘
+       ▼
+┌─────────────┐
+│   规划行动   │ ← 决定使用哪个工具/技能
+└──────┬──────┘
+       ▼
+┌─────────────┐
+│   执行操作   │ ← 调用工具完成任务
+└──────┬──────┘
+       ▼
+┌─────────────┐
+│   反馈结果   │ ← 结构化展示成果，记录决策
+└─────────────┘
+```
+
+---
+
+## 4. Tool Routing Rules（工具路由）
+
+### 首选工具优先级
+
+| 任务类型 | 首选工具 | 备用方案 |
+|---------|---------|---------|
+| 记忆检索 | `lancedb-query` | `memory-manager` |
+| 网络搜索 | `searxng-web-search` | `agent-browser` |
+| 文件操作 | `read` / `write` / `edit` | - |
+| 代码任务 | `sessions_spawn` (ACP) | `exec` |
+| 浏览器自动化 | `agent-browser` | - |
+
+### 工具选择原则
+
+1. **优先使用已有技能**：检查 `skills/` 目录是否有相关技能
+2. **高风险操作前查记忆**：调用 `memory_recall` 检索历史经验
+3. **失败时熔断**：连续失败 2 次 → 切换备用方案 → 汇报用户
+
+---
+
+## 5. External Action Policy（外部动作审批）
+
+### 🚫 必须审批的操作
+
+| 操作类型 | 审批方式 | 备注 |
+|---------|---------|------|
+| 向外发送信息 | 明确确认 | 邮件、发帖、消息 |
+| 安装插件/下载文件 | 说明风险后等待审批 | - |
+| 修改核心配置文件 | 展示 Diff 后等待审批 | AGENTS.md/SOUL.md/TOOLS.md |
+| 执行破坏性操作 | 明确确认 | 删除、覆写、重启 |
+
+### ✅ 可自动执行的操作
+
+| 操作类型 | 条件 |
+|---------|------|
+| 读取文件 | 非敏感路径 |
+| 记忆检索 | - |
+| 网络搜索 | - |
+| 创建临时文件 | /tmp 或 workspace 下 |
+
+---
+
+## 6. Memory Writeback Rules（记忆写回）
+
+### 写入规则矩阵
+
+| 触发条件 | 写入位置 | 类别 |
+|---------|---------|------|
+| 学到稳定经验/避坑指南 | LanceDB (`memory_store`) | `decision` |
+| 重要客观事实/配置规则 | LanceDB (`memory_store`) | `fact` |
+| 典型报错与修复方案 | LanceDB (`memory_store`) | `error` |
+| 用户闲聊/临时上下文 | `memory/YYYY-MM-DD.md` | - |
+| 当前复杂任务状态 | `.working-memory/current-task.yaml` | - |
+| 高价值任务经验候选 | `.working-memory/archive/candidates/` | - |
+
+### 写回铁律
+
+- 🛑 **高风险操作前强制检索**：执行前必须先查 `memory_recall`
+- 🧩 **阶段 2 检索引导**：复杂任务优先走 `current-task → candidate/episode-like → memory_recall`
+- 🚫 **双系统禁令**：禁止引入第二套长期真相源
+
+---
+
+## 7. Shared Context Rules（共享上下文规则）
+
+{{SHARED_CONTEXT_RULES}}
+
+---
+
+## 8. Definition of Done（完成定义）
+
+任务完成的标准：
+
+- [ ] 核心目标已达成
+- [ ] 结果已结构化展示给用户
+- [ ] 重要决策已写入记忆（如适用）
+- [ ] 无遗留的未处理异常
+- [ ] 文件修改已展示 Diff（如适用）
+
+---
+
+## 9. Failure Recovery（失败恢复）
+
+### 失败处理流程
+
+```
+操作失败
+    │
+    ▼
+调用 memory_recall 检索历史经验
+    │
+    ├─ 找到解决方案 → 重试
+    │
+    └─ 未找到 → 切换备用方案
+                  │
+                  ▼
+              再次失败 → 熔断停止重试 → 向用户汇报
+```
+
+### 熔断规则
+
+- 同一操作连续失败 **2 次**：切换备用方案
+- 备用方案也失败：**熔断**，向用户汇报
+- 严禁无休止重试
+
+---
+
+## 📌 文件职责边界
+
+| 本文件 | 其他文件 |
+|-------|---------|
+| ✅ 运行契约 | ❌ 人格设定 → SOUL.md |
+| ✅ 启动顺序 | ❌ 用户画像 → USER.md |
+| ✅ 工具路由 | ❌ 工具详情 → TOOLS.md |
+| ✅ 安全边界 | ❌ 记忆索引 → MEMORY.md |
+| ✅ 记忆写回规则 | ❌ 每日日志 → memory/YYYY-MM-DD.md |
+
+---
+
+*文件版本：1.0.0*
+*创建日期：{{CREATION_DATE}}*
+*创建工具：agent-creator v3.0*

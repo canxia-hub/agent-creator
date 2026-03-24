@@ -1,0 +1,226 @@
+---
+name: agent-creator
+description: "Agent 创建向导技能。帮助用户快速、规范地创建新的 OpenClaw Agent，包括生成核心配置文件、配置飞书应用、设置工作区、安装必备技能、验证配置完整性。Use when: (1) 创建新 Agent, (2) 配置 Agent 身份和人格, (3) 设置飞书机器人, (4) 配置多 Agent 路由, (5) 安装 Agent 必备技能"
+metadata:
+  author: 小千 (Xiao Qian)
+  version: "1.0.0"
+  tags: agent create setup feishu skills install
+  category: system
+  requires:
+    bins: ["openclaw", "skill-manager"]
+---
+
+# Agent Creator - Agent 创建向导
+
+帮助用户快速、规范地创建新的 OpenClaw Agent，一站式完成从配置到部署的全流程。
+
+## 核心功能
+
+- 🚀 **交互式创建向导**：引导式输入，5分钟完成 Agent 创建
+- 📄 **配置文件生成**：自动生成 6 个核心文件（AGENTS.md、SOUL.md、IDENTITY.md、USER.md、MEMORY.md、TOOLS.md）
+- 🎯 **模板系统**：提供 5 种预定义模板（个人助手、团队助手、代码助手等）
+- 🦞 **飞书集成**：自动配置飞书机器人应用和权限
+- 🔄 **多 Agent 路由**：配置 bindings 实现消息路由
+- 🧩 **技能自动安装**：一键安装 12 个必备技能
+- ✅ **配置验证**：自动验证配置完整性并注册到 Gateway
+
+## 快速开始
+
+### 创建新 Agent（交互式）
+
+```bash
+agent-creator create
+```
+
+**流程**：
+1. 输入 Agent 名称
+2. 选择表情符号
+3. 选择用途模板
+4. 选择模型
+5. 选择必备技能（默认全选）
+6. 选择可选技能
+7. 确认创建
+
+### 使用模板生成
+
+```bash
+# 使用个人助手模板
+agent-creator generate --template personal-assistant --agent-id my-assistant
+
+# 使用团队助手模板
+agent-creator generate --template team-helper --agent-id team-bot
+```
+
+### 配置飞书应用
+
+```bash
+agent-creator feishu-setup --agent-id my-assistant
+```
+
+### 配置多 Agent 路由
+
+```bash
+agent-creator routing-setup --agents "main,my-assistant"
+```
+
+### 验证并注册
+
+```bash
+agent-creator validate --agent-id my-assistant
+agent-creator register --agent-id my-assistant
+```
+
+## 命令参考
+
+| 命令 | 功能 | 示例 |
+|------|------|------|
+| `create` | 交互式创建 Agent | `agent-creator create` |
+| `generate` | 使用模板生成配置 | `agent-creator generate --template personal-assistant --agent-id bot` |
+| `feishu-setup` | 配置飞书应用 | `agent-creator feishu-setup --agent-id bot` |
+| `routing-setup` | 配置多 Agent 路由 | `agent-creator routing-setup --agents "main,bot"` |
+| `validate` | 验证配置完整性 | `agent-creator validate --agent-id bot` |
+| `register` | 注册 Agent 到 Gateway | `agent-creator register --agent-id bot` |
+| `list` | 列出已创建 Agent | `agent-creator list` |
+| `export` | 导出 Agent 配置 | `agent-creator export --agent-id bot --output ./backup.zip` |
+| `import` | 导入 Agent 配置 | `agent-creator import --input ./backup.zip` |
+| `install-skills` | 安装必备技能 | `agent-creator install-skills --agent-id bot` |
+| `verify-skills` | 验证技能安装 | `agent-creator verify-skills --agent-id bot` |
+
+## 模板列表
+
+| 模板 | 用途 | 预配置技能 |
+|------|------|-----------|
+| `personal-assistant` | 个人日常助手 | memory, feishu-doc, searxng-web-search |
+| `team-helper` | 团队协作助手 | feishu-bitable, feishu-doc, feishu-task |
+| `coding-assistant` | 代码开发助手 | memory, searxng-web-search, agent-browser |
+| `data-analyst` | 数据分析助手 | feishu-bitable, memory, searxng-web-search |
+| `customer-service` | 客户服务助手 | feishu-doc, memory, feishu-task |
+
+## 必备技能（12个）
+
+创建 Agent 时自动安装的必备技能：
+
+### 记忆系统核心（4个）
+- **lancedb-query** - LanceDB 向量检索
+- **memory-manager** - 记忆文件管理
+- **cron-manager** - 定时任务管理
+- **self-improving-agent** - 自我进化
+
+### 基础工具（3个）
+- **searxng-web-search** - 网络搜索
+- **agent-browser** - 浏览器自动化
+- **powershell** - PowerShell 支持
+
+### Agent 管理（3个）
+- **skill-finder-cn** - 技能查找
+- **agent-config** - Agent 配置
+- **agent-team-orchestration** - 团队编排
+- **task-decomposer** - 任务分解
+
+## 文件结构
+
+创建 Agent 时生成的核心文件：
+
+```
+~/.openclaw/workspace-<agent-id>/
+├── AGENTS.md          # 底层通用运行规则
+├── SOUL.md            # 人格设定
+├── IDENTITY.md        # 身份档案
+├── USER.md            # 服务对象配置
+├── MEMORY.md          # 记忆系统总索引
+├── TOOLS.md           # 本地环境与工具配置
+├── memory/            # 记忆文件目录
+│   ├── INDEX.md
+│   └── YYYY-MM/
+└── skills/            # 专属技能目录（可选）
+```
+
+## 配置示例
+
+### 个人助手配置
+
+```json
+{
+  "identity": {
+    "name": "学习助手",
+    "emoji": "📚",
+    "theme": "default"
+  },
+  "model": "bailian/qwen3.5-plus",
+  "workspace": "C:/Users/Administrator/.openclaw/workspace-study",
+  "skills": [
+    "lancedb-query",
+    "memory-manager",
+    "cron-manager",
+    "self-improving-agent",
+    "searxng-web-search",
+    "agent-browser",
+    "powershell",
+    "skill-finder-cn",
+    "agent-config",
+    "agent-team-orchestration",
+    "task-decomposer"
+  ]
+}
+```
+
+### 飞书多 Agent 路由配置
+
+```json
+{
+  "agents": {
+    "list": [
+      { "id": "main", "workspace": "~/.openclaw/workspace" },
+      { "id": "study", "workspace": "~/.openclaw/workspace-study" }
+    ]
+  },
+  "bindings": [
+    { "agentId": "main", "match": { "channel": "feishu", "accountId": "default" } },
+    { "agentId": "study", "match": { "channel": "feishu", "accountId": "study" } }
+  ]
+}
+```
+
+## 故障排查
+
+### Agent 创建失败
+- 检查工作区路径是否有写入权限
+- 确认 Agent ID 不包含特殊字符
+- 验证 openclaw CLI 可用性
+
+### 技能安装失败
+- 检查网络连接
+- 确认 skill-manager 已安装
+- 查看技能安装日志
+
+### 飞书配置失败
+- 检查 App ID 和 App Secret 是否正确
+- 确认飞书应用已发布
+- 验证权限是否已开通
+
+### Gateway 启动失败
+- 执行 `openclaw doctor` 检查配置
+- 检查端口是否被占用
+- 查看 Gateway 日志
+
+## 最佳实践
+
+1. **命名规范**：Agent ID 使用小写字母、数字、连字符，如 `study-assistant`
+2. **工作区隔离**：每个 Agent 使用独立工作区，避免文件冲突
+3. **权限最小化**：只安装必要的技能，不启用无关工具
+4. **定期备份**：使用 `export` 命令定期备份 Agent 配置
+5. **中文优先**：所有配置和文档使用中文
+
+## 相关技能
+
+- **agent-config** - Agent 配置标准流程
+- **agent-team-orchestration** - 多 Agent 团队编排
+- **skill-manager** - 技能管理
+- **feishu-agent-config** - 飞书配置
+
+---
+
+*技能版本 v1.0*  
+*创建日期：2026-03-16*  
+*创建者：小千 👡*
+
