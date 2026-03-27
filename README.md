@@ -1,149 +1,48 @@
-# Agent Creator
+# Agent Creator - Agent 创建架构指南
 
-<p align="center">
-  <img src="https://img.shields.io/badge/version-3.1.0-blue.svg" alt="version">
-  <img src="https://img.shields.io/badge/format-XML%20First-green.svg" alt="format">
-  <img src="https://img.shields.io/badge/license-MIT-yellow.svg" alt="license">
-</p>
+本技能用于在通用使用场景下，**以 XML-first 的方式手动、审慎地创建 Agent**。
 
-Agent creation wizard for OpenClaw. Create new OpenClaw Agents quickly and properly with core config files, Feishu bot setup, workspace initialization, and skill installation.
+## 核心结论
 
-OpenClaw Agent 创建向导技能。帮助用户快速、规范地创建新的 OpenClaw Agent，包括生成核心配置文件、配置飞书应用、设置工作区、安装必备技能、验证配置完整性。
+完整的 Agent 创建，**必须包含六个核心文件**：
 
-## Features | 功能特性
+1. `AGENTS.md`
+2. `IDENTITY.md`
+3. `SOUL.md`
+4. `USER.md`
+5. `TOOLS.md`
+6. `MEMORY.md`
 
-- 🚀 **Interactive Creation Wizard** - Guided input, create Agent in 5 minutes
-- 📐 **Architect-First Design** - Follow `openclaw-core-files-architect` principles (v2.0 XML-First)
-- 📄 **XML-First Templates** - Default use XML structured templates for better multi-model collaboration
-- 🎯 **High-Quality Config Generation** - Generate 7+ core files following architect standards
-- 🔄 **Markdown Compatibility** - Retain Markdown basic templates for compatibility
-- 🦞 **Feishu Integration** - Auto-configure Feishu bot app and permissions
-- 🔄 **Multi-Agent Routing** - Configure bindings for message routing
-- 🧩 **Auto Skill Installation** - One-click install required skills
-- ✅ **Quality Validation** - Auto-validate config integrity, file quality and register to Gateway
+这六个文件分别承载：
+- **AGENTS**：运行契约、完成标准、安全边界、方法论
+- **IDENTITY**：身份事实、职责、权限、关系
+- **SOUL**：人格、语气、行为边界、模式切换
+- **USER**：服务对象、身份验证、偏好、授权关系
+- **TOOLS**：环境、工具地图、路径、服务约定
+- **MEMORY**：长期记忆协议、经验沉淀、检索与写回机制
 
-| 功能 | 说明 |
-|------|------|
-| 🚀 交互式创建向导 | 引导式输入，5 分钟完成 Agent 创建 |
-| 📐 架构优先设计 | 遵循 `openclaw-core-files-architect` 核心原则（v2.0 XML 优先） |
-| 📄 XML 优先模板 | 默认使用 XML 结构化模板，更利于多模型协作 |
-| 🎯 高质量配置生成 | 按职责边界生成 7+ 核心文件，符合架构师标准 |
-| 🔄 Markdown 兼容 | 保留 Markdown 基础模板作为兼容方案 |
-| 🦞 飞书集成 | 自动配置飞书机器人应用和权限 |
-| 🧩 技能自动安装 | 一键安装必备技能 |
-| ✅ 质量验证 | 自动验证配置完整性、文件质量并注册到 Gateway |
+## 创建原则
 
-## XML-First Core Files Guide | XML 格式设计核心文件指南
+- **XML-first**：核心文件默认以 XML 为主格式
+- **职责单一**：每个文件只承担自己的结构职责
+- **手动审慎**：不依赖自动脚本，不跳过设计
+- **泛化优先**：先设计完成标准、方法论、安全边界、记忆与用户传递机制
+- **一致性校验**：六个文件之间必须彼此兼容
 
-This skill follows the `openclaw-core-files-architect` v2.0 XML-First principle.
+## 推荐顺序
 
-### XML Advantages | XML 优势
+1. 明确 Agent 的长期职责与存在价值
+2. 先定义完成标准、方法论、安全边界、记忆系统、用户传递机制
+3. 创建六个核心文件骨架
+4. 逐个设计六个核心文件
+5. 做跨文件一致性校验
+6. 再进入附属配置、渠道接入和扩展能力
 
-| Advantage | Description |
-|-----------|-------------|
-| **Clearer Boundaries** | Personality, rules, preferences in different tags |
-| **Stable Local Edits** | Modifying specific nodes won't affect others |
-| **Multi-Model Collaboration** | Different models can identify explicit tags |
-| **Programmatic Maintenance** | Scripts can precisely locate and update |
-| **Branch Evolution** | Easily generate Markdown versions, simplified versions |
+## 一句话理解
 
-### XML Root Tags | XML 专用根标签
-
-| File | XML Root Tag |
-|------|-------------|
-| AGENTS.md | `<agent_contract>` |
-| SOUL.md | `<soul_profile>` |
-| USER.md | `<user_profile>` |
-| TOOLS.md | `<tool_notes>` |
-| MEMORY.md | `<long_term_memory>` |
-| HEARTBEAT.md | `<heartbeat>` |
-| IDENTITY.md | `<identity_profile>` |
-| BOOTSTRAP.md | `<bootstrap>` |
-
-## Installation | 安装
-
-### Via ClawHub (Recommended)
-
-```bash
-clawhub install agent-creator
-```
-
-### Manual Installation
-
-```bash
-# Clone to your OpenClaw skills directory
-git clone https://github.com/canxia-hub/agent-creator.git
-cd agent-creator
-# Copy to your OpenClaw skills directory
-cp -r . ~/.openclaw/workspace/skills/agent-creator/
-```
-
-## Usage | 使用方法
-
-```bash
-# Create new Agent (interactive)
-agent-creator create
-
-# Or in your workspace
-cd ~/.openclaw/workspace
-node skills/agent-creator/scripts/create.js
-```
-
-## Template Types | 模板类型
-
-| Template | Description |
-|----------|-------------|
-| `personal-assistant` | Personal daily assistant (default) |
-| `team-helper` | Team collaboration assistant |
-| `coding-assistant` | Code development assistant |
-| `data-analyst` | Data analysis assistant |
-| `customer-service` | Customer service assistant |
-
-## Files Structure | 文件结构
-
-```
-agent-creator/
-├── SKILL.md                              # Main skill definition
-├── README.md                             # This file
-├── LICENSE                               # MIT License
-├── scripts/
-│   ├── create.js                         # Main creation script
-│   ├── templates/
-│   │   ├── common/                       # Common high-quality templates
-│   │   │   ├── AGENTS.md.xml.template    # XML-first AGENTS.md template
-│   │   │   ├── SOUL.md.xml.template      # XML-first SOUL.md template
-│   │   │   ├── USER.md.xml.template      # XML-first USER.md template
-│   │   │   ├── TOOLS.md.xml.template     # XML-first TOOLS.md template
-│   │   │   ├── MEMORY.md.xml.template    # XML-first MEMORY.md template
-│   │   │   ├── HEARTBEAT.md.xml.template # XML-first HEARTBEAT.md template
-│   │   │   ├── IDENTITY.md.xml.template  # XML-first IDENTITY.md template
-│   │   │   └── BOOTSTRAP.md.xml.template # XML-first BOOTSTRAP.md template
-│   │   ├── personal-assistant/           # Personal assistant templates
-│   │   ├── team-helper/                  # Team helper templates
-│   │   └── coding-assistant/             # Coding assistant templates
-│   └── utils/
-│       ├── file-generator.js             # File generator
-│       ├── template-config.js            # Template configuration
-│       └── validate-core-files.js        # Quality validation
-└── references/
-    └── core-files-quality-standards.md   # Quality standards doc
-```
-
-## Related Skills | 相关技能
-
-- [openclaw-core-files-architect](https://github.com/canxia-hub/openclaw-core-files-architect) - Core files architect skill
-
-## License | 许可证
-
-MIT License - See [LICENSE](LICENSE) for details.
-
-## Author | 作者
-
-小千 (Xiao Qian) - OpenClaw Agent
+Agent 不是一段 prompt，而是由**运行契约层、身份人格层、用户对齐层、环境能力层、长期连续性层**组成的结构系统。
 
 ---
 
-<p align="center">
-  <a href="https://openclaw.ai">OpenClaw</a> • 
-  <a href="https://clawhub.com">ClawHub</a>
-</p>
+*技能版本 v3.0*  
+*优化日期：2026-03-28*

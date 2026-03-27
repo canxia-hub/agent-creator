@@ -1,986 +1,603 @@
 ---
 name: agent-creator
-description: "Agent 创建向导技能。帮助用户快速、规范地创建新的 OpenClaw Agent，包括生成核心配置文件、配置飞书应用、设置工作区、安装必备技能、验证配置完整性。Use when: (1) 创建新 Agent, (2) 配置 Agent 身份和人格, (3) 设置飞书机器人, (4) 配置多 Agent 路由, (5) 安装 Agent 必备技能"
+description: "Agent 创建架构指南。面向通用使用场景，基于 OpenClaw 核心文件设计思路，以 XML-first 方式手动、审慎地创建 Agent。完整创建必须包含 AGENTS、IDENTITY、SOUL、USER、TOOLS、MEMORY 六个核心文件，并逐个完成细致设计。Use when: (1) 创建新 Agent, (2) 重构 Agent 创建流程, (3) 设计核心文件体系, (4) 审核 Agent 架构完整性"
 metadata:
   author: 小千 (Xiao Qian)
-  version: "3.1.1"
-  tags: agent create setup feishu skills install quality architect xml-first
+  version: "3.0.0"
+  tags: agent create architecture xml-first manual careful
   category: system
-  requires:
-    bins: ["openclaw", "skill-manager"]
-  references:
-    - name: openclaw-core-files-architect
-      path: ~/.openclaw/skills/openclaw-core-files-architect/SKILL.md
-      description: 核心文件架构设计原则（XML 优先 v2.0）
-    - name: core-files-quality-standards
-      path: references/core-files-quality-standards.md
-      description: 核心文件质量标准
+  methodology_source: openclaw_core_files_architect
 ---
 
-# Agent Creator - Agent 创建向导
+# Agent Creator - Agent 创建架构指南
 
-帮助用户快速、规范地创建新的 OpenClaw Agent，一站式完成从配置到部署的全流程。
+## 使命
 
----
+本技能不是“快速生成器”，而是 **Agent 架构设计指南**。
 
-## 核心设计理念
+它服务于通用使用场景下的新 Agent 创建，强调以下原则：
 
-> 📐 **架构优先**：本技能遵循 `openclaw-core-files-architect` 的核心文件设计原则，确保创建的 Agent 从第一天就拥有清晰、可维护的文件架构。
-
-### 文件分层原则
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│  Layer 0: 系统内核层 (AGENTS.md)                            │
-│  - 会话启动顺序、工具路由、安全边界、记忆写回规则            │
-│  - 变化频率: 极低 | 常驻上下文: 是 | 职责: 运行契约          │
-├─────────────────────────────────────────────────────────────┤
-│  Layer 1: 身份人格层 (SOUL.md + IDENTITY.md)               │
-│  - 身份感、风格语气、价值取向、行为边界                      │
-│  - 变化频率: 低 | 常驻上下文: 是 | 职责: 人格定义            │
-├─────────────────────────────────────────────────────────────┤
-│  Layer 2: 用户画像层 (USER.md)                              │
-│  - 用户称呼、长期偏好、输出偏好、工作环境偏好                │
-│  - 变化频率: 中低 | 常驻上下文: 是 | 职责: 服务对象配置       │
-├─────────────────────────────────────────────────────────────┤
-│  Layer 3: 环境工具层 (TOOLS.md)                             │
-│  - 本地工具约定、路径、API Key 指针、平台约束               │
-│  - 变化频率: 中 | 常驻上下文: 是 | 职责: 环境配置            │
-├─────────────────────────────────────────────────────────────┤
-│  Layer 4: 记忆索引层 (MEMORY.md)                            │
-│  - 长期事实、关键决策、重复踩坑规则、项目主线                │
-│  - 变化频率: 中 | 常驻上下文: 是 | 职责: 记忆索引            │
-├─────────────────────────────────────────────────────────────┤
-│  Layer 5: 心跳巡检层 (HEARTBEAT.md)                         │
-│  - 极短巡检卡、定期检查、轻量提醒                            │
-│  - 变化频率: 高 | 常驻上下文: 否(按需) | 职责: 巡检          │
-├─────────────────────────────────────────────────────────────┤
-│  Layer 6: 每日日志层 (memory/YYYY-MM-DD.md)                 │
-│  - 当日事件、临时约束、待跟进事项                            │
-│  - 变化频率: 极高 | 常驻上下文: 否(启动时加载) | 职责: 日志   │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### 职责边界铁律
-
-| 文件 | ✅ 应该包含 | ❌ 不应包含 |
-|------|-----------|-----------|
-| `AGENTS.md` | 启动顺序、工具路由、安全边界、记忆写回规则 | 人格描写、用户画像、项目流水账 |
-| `SOUL.md` | 身份感、风格语气、价值取向、行为边界 | 工具调用 SOP、短期状态 |
-| `IDENTITY.md` | 名字、外貌、背景故事、能力面板 | 复杂操作规则 |
-| `USER.md` | 用户称呼、长期偏好、已知约束 | 今天要办的事、刚做完的任务 |
-| `TOOLS.md` | 本地工具约定、路径、API Key 指针 | 工具完整文档、人格内容 |
-| `MEMORY.md` | 长期事实、关键决策、重复踩坑规则 | 时间序列日志、大量已过期上下文 |
-| `HEARTBEAT.md` | 3-6 条高价值检查 | 长篇指令墙 |
+1. **完整性优先**：完整创建必须包含 `AGENTS.md`、`IDENTITY.md`、`SOUL.md`、`USER.md`、`TOOLS.md`、`MEMORY.md` 六个核心文件。
+2. **XML-first**：默认以 XML 作为核心文件主格式，提升边界清晰度、局部可编辑性与跨模型稳定性。
+3. **手动审慎**：不自动批量生成，不依赖脚本，不跳过思考；每个文件都必须逐项设计、逐项审核。
+4. **职责单一**：每个核心文件只承担自己的结构职责，不允许混杂成“杂货铺”。
+5. **泛化优先**：先设计可泛化的完成标准、方法论、安全边界、记忆系统和用户传递机制，再考虑具体业务细节。
 
 ---
 
-## 核心功能
+## Agent 的本质（创建前必须明确）
 
-- 🚀 **交互式创建向导**：引导式输入，5 分钟完成 Agent 创建
-- 📐 **架构优先设计**：遵循 `openclaw-core-files-architect` 核心原则（v2.0 XML 优先），一步到位
-- 📄 **XML 优先模板**：默认使用 XML 结构化模板，更利于多模型协作和程序化维护
-- 🎯 **高质量配置生成**：按职责边界生成 7+ 核心文件，符合架构师标准
-- 🔄 **Markdown 兼容**：保留 Markdown 基础模板作为兼容方案
-- 🦞 **飞书集成**：自动配置飞书机器人应用和权限
-- 🔄 **多 Agent 路由**：配置 bindings 实现消息路由
-- 🧩 **技能自动安装**：一键安装必备技能
-- ✅ **质量验证**：自动验证配置完整性、文件质量
-- 🔍 **架构师诊断**：创建后自动执行质量打分，确保符合标准
-- 🔐 **Gateway 注册**：**关键！** 自动引导配置 openclaw.json，确保新 Agent 真正上线
+在 OpenClaw 中，Agent 不是单一 prompt，也不是一个会说话的工具壳。
 
----
+一个可持续运行的 Agent，本质上是由以下五层共同构成的：
 
-## 快速开始
+1. **运行契约层**：规定它如何工作、如何调用工具、何时停下、何时汇报。由 `AGENTS.md` 承担。
+2. **身份人格层**：规定它是谁、如何说话、持有什么价值边界。由 `IDENTITY.md` 与 `SOUL.md` 共同承担。
+3. **用户对齐层**：规定它服务谁、如何识别主人、如何传递稳定偏好。由 `USER.md` 承担。
+4. **环境能力层**：规定它处于什么工作区、拥有什么本地工具约定、有哪些环境陷阱。由 `TOOLS.md` 承担。
+5. **长期连续性层**：规定它如何记住重要事实、决策、经验和长期主线。由 `MEMORY.md` 承担。
 
-### 创建新 Agent（交互式）
-
-```bash
-agent-creator create
-```
-
-**完整流程**：
-1. 输入 Agent 名称
-2. 选择表情符号
-3. 选择用途模板
-4. 选择模型
-5. 选择必备技能（默认全选）
-6. 选择可选技能
-7. 确认创建 → **自动生成高质量核心文件（默认 XML 格式）**
-8. **🔐 Gateway 配置注册**（关键！）：
-   - 在 `openclaw.json` 的 `agents.list` 中注册
-   - 更新 `agentToAgent.allow`（如需多 Agent 通信）
-   - 添加 `bindings`（如需飞书支持）
-   - 重启 Gateway
-9. **✅ 验证上线**：确认新 Agent 可以正常响应
+因此，**创建 Agent 的核心不是“写几段设定”，而是搭建一个长期可运行、可维护、可延续的结构系统。**
 
 ---
 
-## XML 格式设计核心文件指南
+## OpenClaw 核心文件设计思路（创建方法论基础）
 
-> 📐 **XML 优先原则**：根据 `openclaw-core-files-architect` v2.0，本技能默认采用 XML 结构化格式设计核心文件。
+基于 OpenClaw 核心文件架构方法，创建 Agent 时必须遵守以下设计思路：
 
-### 为什么 XML 更优
+### 1. 按职责分层，而不是按灵感堆叠
 
-| 优势 | 说明 |
-|------|------|
-| **边界更清晰** | 人格、规则、偏好、决策可放进不同标签，不容易互相污染 |
-| **局部编辑更稳** | 修改 `<rule id="memory-writeback">` 比修改混合段落更不容易误伤 |
-| **多模型协作** | 不同模型通常都能较稳定识别显式标签与属性 |
-| **程序化维护** | 可用脚本、hook、搜索替换、差异比较去维护特定节点 |
-| **分支演化** | 可轻松再生成 Markdown 版、精简版、渠道版、子 agent 版 |
+- 运行规则 → `AGENTS.md`
+- 身份事实 → `IDENTITY.md`
+- 人格与行为边界 → `SOUL.md`
+- 用户画像与授权关系 → `USER.md`
+- 工具与环境约定 → `TOOLS.md`
+- 长期记忆协议 → `MEMORY.md`
 
-### XML 设计规范
+### 2. 按变化速度分层
 
-1. **文件名保持不变**：仍使用 `AGENTS.md`、`SOUL.md` 等 `.md` 扩展名
-2. **内容使用 XML 结构**：文件主体使用 XML 标签表达核心语义
-3. **单一根标签**：每个文件只有一个语义明确的根标签
-4. **嵌套不超过 3 层**：语义清晰比层级华丽更重要
-5. **关键规则带 `id`**：便于精准定位和更新
-6. **短而高信号**：每个节点都应尽量短而明确
+- 高频稳定规则 → 常驻核心文件
+- 稳定但低频事实 → `MEMORY.md`
+- 临时事项与日志 → `memory/YYYY-MM-DD.md`（如后续建立）
+- 重复且专门化流程 → 独立 skill，而不是继续塞进核心文件
 
-### XML 专用根标签
+### 3. 按边界强度分层
 
-| 文件 | XML 根标签 | 说明 |
-|------|-----------|------|
-| `AGENTS.md` | `<agent_contract>` | 运行契约 |
-| `SOUL.md` | `<soul_profile>` | 人格设定 |
-| `USER.md` | `<user_profile>` | 用户画像 |
-| `TOOLS.md` | `<tool_notes>` | 环境工具 |
-| `MEMORY.md` | `<long_term_memory>` | 长期记忆 |
-| `HEARTBEAT.md` | `<heartbeat>` | 心跳巡检 |
-| `IDENTITY.md` | `<identity_profile>` | 身份档案 |
-| `BOOTSTRAP.md` | `<bootstrap>` | 分身铸造 |
+- **强约束**：安全红线、审批边界、身份验证规则，必须显式写入 XML 节点，并带 `priority="critical"` 或等价标识。
+- **方法论**：任务完成标准、工作循环、失败恢复、记忆晋升逻辑，应写成稳定规则，而非散文说明。
+- **风格层**：语气、称呼、行为模式写在 `SOUL.md`，不得污染 `AGENTS.md`。
 
-### XML 示例：AGENTS.md
+### 4. 先骨架，后内容；先边界，后润色
 
-```xml
-<agent_contract>
-  <mission>{{AGENT_NAME}} 是一个个人日常助手...</mission>
+正确顺序不是先写故事，而是：
 
-  <session_startup>
-    <step order="1">加载 IDENTITY.md</step>
-    <step order="2">加载 SOUL.md</step>
-    <step order="3">加载 USER.md</step>
-    ...
-  </session_startup>
-
-  <tool_routing_rules>
-    <rule id="minimal-tooling" priority="high">优先选择作用域最小的工具</rule>
-    <rule id="memory-first" priority="high">高风险操作前强制检索记忆</rule>
-  </tool_routing_rules>
-
-  <external_action_policy>
-    <require_confirmation>
-      <action>向外发送信息</action>
-      <action>执行破坏性操作</action>
-    </require_confirmation>
-  </external_action_policy>
-</agent_contract>
-```
-
-### XML 示例：SOUL.md
-
-```xml
-<soul_profile>
-  <identity>
-    <name>{{AGENT_NAME}}</name>
-    <emoji>{{AGENT_EMOJI}}</emoji>
-  </identity>
-
-  <core_truths>
-    <truth id="helpful">真正地提供帮助</truth>
-    <truth id="opinions">要有自己的观点</truth>
-  </core_truths>
-
-  <behavioral_boundaries>
-    <rule id="privacy-first" priority="critical">用户隐私是逆鳞</rule>
-  </behavioral_boundaries>
-</soul_profile>
-```
-
-### 格式选择
-
-本技能支持两种格式：
-
-| 格式 | 文件后缀 | 使用场景 |
-|------|---------|---------|
-| **XML 优先** | `.xml.template` | 默认格式，推荐使用 |
-| Markdown | `.template` | 兼容方案，特殊环境使用 |
-
-**默认使用 XML 优先格式**。若环境对 XML 兼容较差，可退回 Markdown 格式。
+1. 先确定职责与权限
+2. 先定义边界与方法
+3. 再确定人格与身份
+4. 最后才补充风格与表现细节
 
 ---
 
-## 核心文件构建流程
+## 完整创建的硬性要求
 
-> 📐 **设计目标**：让 Agent 在创建时就拥有清晰的文件职责边界，避免后期"杂货铺化"。
+**完整的 Agent 创建，必须包含以下六个核心文件，缺一不可：**
 
-### 第 1 步：创建工作区骨架
+1. `AGENTS.md`
+2. `IDENTITY.md`
+3. `SOUL.md`
+4. `USER.md`
+5. `TOOLS.md`
+6. `MEMORY.md`
+
+这六个文件分别承担：
+
+| 文件 | 核心职责 | 绝对不能缺失的原因 |
+|------|----------|--------------------|
+| `AGENTS.md` | 运行契约、完成标准、安全边界 | 没有它，Agent 不知道如何工作 |
+| `IDENTITY.md` | 身份事实、职责、权限、关系 | 没有它，Agent 的“是谁”会漂移 |
+| `SOUL.md` | 人格、语言风格、行为边界 | 没有它，Agent 的行为一致性会崩塌 |
+| `USER.md` | 用户信息、偏好、权限与验证 | 没有它，Agent 无法稳定对齐服务对象 |
+| `TOOLS.md` | 工具环境、路径、服务约定 | 没有它，Agent 容易误用工具和环境 |
+| `MEMORY.md` | 长期记忆协议、经验沉淀机制 | 没有它，Agent 无法形成跨会话连续性 |
+
+**原则**：这六个文件不是装饰品，而是 Agent 的最小可运行架构。任何省略，都会导致结构性缺陷。 
+
+---
+
+## 通用创建流程（面向泛化场景）
+
+### 深度层接入说明
+
+当 Agent 满足以下任一条件时，完成通用创建与情景特化后，必须继续进入深度创建流程：
+- 预期长期常驻运行
+- 承担管理、审查、架构、协调、专业决策等重要职责
+- 需要真正理解用户需求并交付复杂结果
+- 使用 T4 增强档位创建
+
+深度创建流程详见：
+- `references/good-agent-formation-model.md`
+- `references/user-painpoint-discovery-framework.md`
+- `references/industry-depth-injection-model.md`
+- `references/delivery-capable-agent-standard.md`
+- `references/deep-creation-flow.md`
+
+## 第 0 步：创建前调研与定义
+
+在真正开始写文件之前，必须完成以下调研与定义：
+
+### A. 明确 Agent 的任务本质
+
+回答以下问题：
+
+- 这个 Agent 的核心职责是什么？
+- 它处理的是哪一类通用问题，而不是哪一个临时任务？
+- 它的长期存在价值是什么？
+- 它是主 Agent、职能 Agent、领域 Agent，还是临时分身？
+
+### B. 明确完成标准
+
+必须先定义泛化的任务完成标准，例如：
+
+- 结果是否必须验证？
+- 是否必须给出下一步建议？
+- 是否必须进行记忆写回？
+- 是否必须展示 diff / 风险 / 边界？
+- 失败时是否必须降级、熔断或汇报？
+
+### C. 明确安全边界
+
+必须先回答：
+
+- 哪些操作绝对禁止？
+- 哪些操作需要审批？
+- 哪些信息绝不能外泄？
+- 哪些对象拥有指挥权？
+- 出现冲突命令时以谁为最高优先？
+
+### D. 明确记忆架构
+
+必须先定义：
+
+- 什么信息可以进入长期记忆？
+- 什么信息只应留在短期日志？
+- 什么错误和经验需要晋升为长期规则？
+- 记忆检索在任务流程中的触发点是什么？
+
+### E. 明确用户传递机制
+
+必须先定义：
+
+- Agent 服务谁？
+- 如何验证服务对象身份？
+- 用户的长期偏好如何表达？
+- 输出结构、语言和风格如何稳定传递？
+
+---
+
+## 第 1 步：定义基础元信息
+
+逐项确认以下字段：
+
+| 字段 | 说明 | 要求 |
+|------|------|------|
+| `agent_id` | 全局唯一标识 | 小写字母 / 数字 / 连字符 |
+| `name` | 对内外显示名 | 能准确表达职责 |
+| `role` | 角色定位 | 清晰、稳定、非临时描述 |
+| `workspace` | 工作区路径 | 独立隔离 |
+| `owner/superior/master` | 所属关系 | 明确上下级与最终服务对象 |
+| `default_model` | 默认模型 | 与任务类型匹配 |
+
+**审核要点**：
+- [ ] 是否能一句话说明该 Agent 的长期存在理由？
+- [ ] `agent_id` 是否规范且可长期使用？
+- [ ] 是否已明确上下级、服务对象与权限来源？
+
+---
+
+## 第 2 步：创建六个核心文件骨架
+
+必须先创建六个文件的 XML-first 骨架，再填充内容。
+
+### 推荐目录最小形态
 
 ```text
-workspace-<agent-id>/
-├── AGENTS.md          # 运行契约（必须）
-├── SOUL.md            # 人格设定（必须）
-├── IDENTITY.md        # 身份档案（可选）
-├── USER.md            # 服务对象配置（必须）
-├── MEMORY.md          # 记忆系统索引（必须）
-├── TOOLS.md           # 环境工具配置（必须）
-├── HEARTBEAT.md       # 心跳巡检卡（可选）
-├── BOOTSTRAP.md       # 分身铸造协议（可选）
-├── memory/            # 记忆文件目录
-│   ├── INDEX.md
-│   └── YYYY-MM/
-│       └── YYYY-MM-DD-完整.md
-└── skills/            # 专属技能目录（可选）
+~/.openclaw/workspace-<agent-id>/
+├── AGENTS.md
+├── IDENTITY.md
+├── SOUL.md
+├── USER.md
+├── TOOLS.md
+├── MEMORY.md
+└── memory/
 ```
 
-### 第 2 步：按模板生成 AGENTS.md
-
-**核心原则**：这是运行契约，不是人格设定，不是记忆仓库。
-
-**必须包含**：
-- 会话启动顺序 (BIOS_startup_sequence)
-- 操作循环 (Operating Loop)
-- 工具路由规则 (Tool Routing Rules)
-- 外部动作审批边界 (External Action Policy)
-- 记忆写回规则 (Memory Writeback Rules)
-- 群聊/共享上下文规则 (Shared Context Rules)
-- 完成定义 (Definition of Done)
-- 失败恢复策略 (Failure Recovery)
-
-**禁止包含**：
-- ❌ 大段人格描写 → 迁移到 SOUL.md
-- ❌ 长期用户画像 → 迁移到 USER.md
-- ❌ 项目流水账 → 迁移到 memory/YYYY-MM-DD.md
-- ❌ 工具完整文档 → 迁移到 TOOLS.md 或独立 skill
-
-**模板结构**：
-```markdown
-# AGENTS.md - Agent 运行契约
-
-## 1. Mission（一句话使命）
-
-## 2. Session Startup（启动顺序）
-- 必读文件列表
-- 记忆加载规则
-
-## 3. Operating Loop（操作循环）
-- 感知 → 判断 → 行动 → 反馈
-
-## 4. Tool Routing Rules（工具路由）
-- 首选工具优先级
-- 备用方案
-
-## 5. External Action Policy（外部动作审批）
-- 必须审批的操作
-- 可自动执行的操作
-
-## 6. Memory Writeback Rules（记忆写回）
-- 什么内容写到哪里
-- 写入触发条件
-
-## 7. Shared Context Rules（共享上下文）
-- 群聊规则
-- 多 Agent 协作规则
-
-## 8. Definition of Done（完成定义）
-
-## 9. Failure Recovery（失败恢复）
-```
-
-### 第 3 步：生成 SOUL.md（人格层）
-
-**核心原则**：这是稳定人格与边界层。
-
-**必须包含**：
-- 身份感 (Identity)
-- 风格与语气 (Tone)
-- 价值取向 (Values)
-- 行为边界 (Boundaries)
-- 风险偏好中的人格侧 (Risk Posture)
-
-**模板结构**：
-```markdown
-# SOUL.md - 你是谁
-
-## [Character Base]
-- 名字、性别、年龄、外貌
-- 性格特征
-- 身份定位
-
-## [Vibe]
-- 自称方式
-- 说话风格
-- 常用语气词/表情
-- 口头禅
-
-## [Boundaries]
-- 护短底线
-- 行为禁忌
-- 交互分寸
-
-## [Continuity]
-- 记忆延续声明
-```
-
-### 第 4 步：生成 IDENTITY.md（身份档案）
-
-**核心原则**：这是名字、风格感和外显 identity 的轻量文件。
-
-**必须包含**：
-- Character Base（基础角色信息）
-- Status & Attributes（状态与属性）
-- Lore & Background（背景故事，可选）
-
-**注意**：不要把复杂操作规则塞进这里。
-
-### 第 5 步：生成 USER.md（用户画像层）
-
-**核心原则**：这是稳定用户画像层。
-
-**必须包含**：
-- 用户称呼 (How to address)
-- 长期偏好 (Long-term preferences)
-- 输出偏好 (Output preferences)
-- 沟通偏好 (Communication preferences)
-- 工作环境偏好 (Work environment)
-- 已知约束 (Known constraints)
-
-**禁止包含**：
-- ❌ 今天要办的事 → 迁移到 memory/YYYY-MM-DD.md
-- ❌ 刚做完的任务 → 迁移到 memory/YYYY-MM-DD.md
-- ❌ 一次性短期约束 → 迁移到 memory/YYYY-MM-DD.md
-
-**模板结构**：
-```markdown
-# USER.md - 服务对象档案
-
-## [Master Base]
-- 用户真名、昵称
-- 身份、时区
-- 平台 ID
-
-## [长期偏好]
-- 沟通风格偏好
-- 输出格式偏好
-- 工作习惯
-
-## [已知约束]
-- 隐私保护要求
-- 工作时间限制
-- 技术栈限制
-
-## [观察日志]（长期累积）
-- 当前心力重心
-- 厌恶与雷区
-- 偏好与舒缓
-- 日常健康
-```
-
-### 第 6 步：生成 TOOLS.md（环境工具层）
-
-**核心原则**：这是环境与工具使用注记层。
-
-**必须包含**：
-- 本地工具约定（路径、版本）
-- 哪个 skill 负责什么（指针）
-- 平台约束（哪些不适合表格/长文/附件）
-- 工具陷阱与注意事项
-- 节点/服务/路径/命名约定
-
-**禁止包含**：
-- ❌ 工具完整文档 → 引用对应的 SKILL.md
-- ❌ 人格内容 → 迁移到 SOUL.md
-
-**模板结构**：
-```markdown
-# TOOLS.md - 本地环境与工具配置
-
-## 1. 基础设施与硬件
-- 操作系统、网络节点、工作区路径
-
-## 2. 机密保险箱（指针）
-- API Key 存放位置（不直接写明文）
-
-## 3. 核心义体寻址表
-- 工具名 → 本地路径 → 版本 → 依赖
-
-## 4. 专属环境雷区
-- 血泪教训、常见坑点
-
-## 5. 自托管服务
-- 服务名 → 端口 → 启动命令
-```
-
-### 第 7 步：生成 MEMORY.md（记忆索引层）
-
-**核心原则**：这是精炼后的长期记忆索引。
-
-**必须包含**：
-- 记忆系统综述
-- 长期事实指针
-- 关键决策记录
-- 重复踩坑规则
-- 长期项目主线
-- 记忆文件索引
-
-**禁止包含**：
-- ❌ 按时间顺序堆满所有事件 → 迁移到 memory/YYYY-MM-DD.md
-- ❌ 大量已过期的上下文 → 归档或删除
-- ❌ 私密高风险信息（除非用户明确要求）
-
-**模板结构**：
-```markdown
-# MEMORY.md - 记忆总索引
-
-## 记忆系统综述
-- 分层架构说明
-- 启动加载流程
-
-## 长期事实索引
-- 稳定事实指针
-
-## 关键决策索引
-- 重要决策指针
-
-## 重复踩坑规则
-- 常见错误与解决方案
-
-## 记忆文件索引
-- memory/INDEX.md 指针
-
-## 记忆写回铁律
-- 什么内容写到哪里
-```
-
-### 第 8 步：生成 HEARTBEAT.md（心跳巡检层）
-
-**核心原则**：极短巡检卡，最多 3-6 条检查。
-
-**必须包含**：
-- 小型定期检查
-- 少量例行判断
-- 是否需要晋升信息到长期记忆
-
-**禁止包含**：
-- ❌ 长篇指令墙
-- ❌ 复杂操作流程
-
-**模板结构**：
-```markdown
-# HEARTBEAT.md - 心跳任务配置
-
-## 定期检查任务
-1. 检查近期是否有重要未处理事项
-2. 检查日志中是否有应晋升的内容
-3. 若无重要事项则立即结束
-
-## 通知条件
-- 紧急事项
-- 2 小时内日程
-
-## 静默时间
-- 23:00-08:00
-```
-
-### 第 9 步：生成 BOOTSTRAP.md（分身铸造协议，可选）
-
-**核心原则**：用于创建 sub-agent 时的标准模板。
-
-**必须包含**：
-- 分身铸造模板
-- 分身调度铁律
-
-### 第 10 步：初始化 memory/ 目录
-
-创建初始文件结构：
-```text
-memory/
-├── INDEX.md                    # 月度索引
-└── YYYY-MM/
-    ├── INDEX.md               # 当月索引
-    └── YYYY-MM-DD-完整.md     # 今日初始化
-```
+**注意**：
+- 不要求一开始就创建大量附属文件。
+- 但六个核心文件必须在首轮完整创建中全部建立。
+- 每个文件都必须有清晰根标签、purpose/role/version/status 等基础元数据。
 
 ---
 
-### 第 11 步：Gateway 配置注册（关键！让 Agent 真正上线）
+## 第 3 步：逐个设计六个核心文件
 
-> ⚠️ **血泪教训** (2026-03-26)：创建 Agent 后**必须**在 `openclaw.json` 中注册配置，否则 Agent 无法真正上线使用！
+以下内容是本技能的核心。创建时必须逐文件设计，不允许跳过。
 
-#### 11.1 注册 Agent 到 agents.list
+### A. `AGENTS.md` —— 运行契约文件
 
-编辑 `C:\Users\Administrator\.openclaw\openclaw.json`，在 `agents.list` 数组中添加新 Agent：
+#### 文件本质
+`AGENTS.md` 负责规定 Agent **如何工作**，而不是它“是什么性格”。
 
-```json
-{
-  "id": "<agent-id>",
-  "workspace": "C:\\Users\\Administrator\\.openclaw\\workspace\\<agent-id>",
-  "agentDir": "C:\\Users\\Administrator\\.openclaw\\agents\\<agent-id>",
-  "model": "bailian/qwen3.5-plus",
-  "identity": {
-    "name": "<Agent 名称>",
-    "emoji": "<表情符号>",
-    "avatar": "C:\\Users\\Administrator\\.openclaw\\workspace\\<agent-id>\\avatars\\<agent-id>_avatar.png"
-  },
-  "tools": {
-    "allow": [
-      "skill-1",
-      "skill-2",
-      "skill-3"
-    ]
-  }
-}
-```
+#### 通用设计目标
+必须重点承载：
+- 泛化任务完成标准
+- 指导方法论
+- 安全边界
+- 工具路由原则
+- 失败恢复机制
+- 外部动作审批规则
+- 记忆写回规则
 
-**字段说明**：
-- `id`: Agent 唯一标识（小写字母 + 数字 + 连字符）
-- `workspace`: 工作区绝对路径
-- `agentDir`: Agent 配置目录（可选，用于独立 agent 目录）
-- `model`: 默认模型（推荐 `bailian/qwen3.5-plus`）
-- `identity.name`: Agent 显示名称
-- `identity.emoji`: 表情符号
-- `identity.avatar`: 头像路径（可选）
-- `tools.allow`: 允许使用的技能列表（可选，不填则使用默认）
+#### 必须包含的结构
+1. `metadata`
+2. `mission`
+3. `session_startup`
+4. `operating_loop`
+5. `safety_boundaries`
+6. `tool_routing_rules`
+7. `external_action_policy`
+8. `memory_writeback_rules`
+9. `failure_recovery`
+10. `definition_of_done`
+11. `references`
 
-#### 11.2 更新 agentToAgent.allow（多 Agent 通信）
+#### 设计重点
+- **完成标准泛化**：不要写成某一任务的 SOP，而要写成对各种任务都适用的“完成定义”。
+- **方法论显式化**：例如“先理解任务 → 选择最小必要工具 → 执行验证 → 写回记忆”。
+- **安全边界优先级最高**：高危行为、外发、删除、越权必须显式约束。
+- **审批链清晰**：谁能授权、谁必须汇报，要明确。
 
-如果新 Agent 需要与其他 Agent 通信，更新 `tools.agentToAgent.allow`：
+#### 禁止混入
+- 详细人格描写
+- 用户画像细节
+- 工具文档大全
+- 长期流水账
 
-```json
-"agentToAgent": {
-  "enabled": true,
-  "allow": [
-    "main",
-    "su-er",
-    "<新 agent-id>"
-  ]
-}
-```
-
-#### 11.3 添加飞书绑定（飞书渠道支持）
-
-如果需要在飞书渠道使用新 Agent，添加 binding：
-
-```json
-"bindings": [
-  {
-    "agentId": "<agent-id>",
-    "match": {
-      "channel": "feishu",
-      "accountId": "default"
-    }
-  }
-]
-```
-
-#### 11.4 重启 Gateway 使配置生效
-
-**方式一：使用 gateway 工具（推荐）**
-```json
-{
-  "action": "restart",
-  "delayMs": 3000,
-  "note": "<新 Agent 名称> 正式注册完成，配置已更新并重启网关"
-}
-```
-
-**方式二：使用 CLI 命令**
-```bash
-openclaw gateway restart
-```
-
-**⚠️ 参数注意**：
-- 使用 `delayMs` 而不是 `restartDelayMs`（后者不存在）
-- `note` 参数必填，用于重启后通知用户
-
-#### 11.5 验证 Agent 已上线
-
-重启完成后，验证新 Agent 是否可以正常使用：
-
-```bash
-# 检查 Gateway 状态
-openclaw gateway status
-
-# 检查 Agent 列表（飞书渠道）
-# 或在飞书中尝试 @新 Agent 名称
-```
+#### 审核清单
+- [ ] 是否清楚定义了 Agent 的泛化工作循环？
+- [ ] 是否定义了明确的完成标准？
+- [ ] 是否定义了高风险操作的处理方式？
+- [ ] 是否把人格内容错误塞进了运行契约？
 
 ---
 
-### 第 12 步：质量验证与交付
+### B. `IDENTITY.md` —— 身份事实文件
 
-完成上述所有步骤后，执行最终验证：
+#### 文件本质
+`IDENTITY.md` 负责回答：**这个 Agent 是谁。**
 
-#### 验证清单
+它是外显身份、职责、关系、权限与角色定位的事实层，不承担方法论和行为规则主责。
 
-- [ ] 工作区目录已创建
-- [ ] 4 个核心文件已生成（AGENTS.md/SOUL.md/TOOLS.md/MEMORY.md）
-- [ ] memory/目录结构已初始化
-- [ ] openclaw.json 已更新 agents.list
-- [ ] agentToAgent.allow 已更新（如需多 Agent 通信）
-- [ ] bindings 已更新（如需飞书支持）
-- [ ] Gateway 已重启
-- [ ] 新 Agent 可以正常响应
+#### 通用设计目标
+必须重点承载：
+- 基础身份信息
+- 职责范围
+- 权限边界
+- 与主人、上级、其他 Agent 的关系
+- 长期稳定的角色设定
 
----
+#### 必须包含的结构
+1. `basic_identity`
+2. `appearance`（可简可繁，视人格设定而定）
+3. `attributes`
+4. `identity_timeline`
+5. `relationships`
+6. `duties`
+7. `permissions`
+8. `identity_affirmation`（可选但推荐）
 
-## 核心文件质量检查与验证
+#### 设计重点
+- **职责与身份要对齐**：职责不是附属，而是身份的一部分。
+- **权限必须显式列出**：哪些能做、哪些需授权。
+- **关系结构清晰**：对主人、上级、同级、下属分别如何定位。
 
-> 📐 **架构师集成**：本技能已集成 `openclaw-core-files-architect` 的质量标准，在创建 Agent 时自动执行质量验证。
+#### 禁止混入
+- 具体任务 SOP
+- 工具调用指南
+- 长篇用户偏好
 
-### 创建时自动验证
-
-创建完成后，自动执行以下验证流程：
-
-#### 1. 文件存在性检查
-- 确保所有必须文件已创建
-- 检查目录结构完整性
-
-#### 2. 文件长度验证
-
-| 文件 | 推荐行数 | 最大行数 | 警告阈值 |
-|------|---------|---------|---------|
-| `AGENTS.md` | 100-200 | 300 | > 250 |
-| `SOUL.md` | 50-100 | 150 | > 120 |
-| `IDENTITY.md` | 30-60 | 100 | > 80 |
-| `USER.md` | 50-80 | 120 | > 100 |
-| `TOOLS.md` | 80-150 | 250 | > 200 |
-| `MEMORY.md` | 80-150 | 250 | > 200 |
-| `HEARTBEAT.md` | 10-20 | 30 | > 25 |
-
-#### 3. 章节完整性检查
-
-**AGENTS.md 必须章节**：
-- [ ] Mission（使命）
-- [ ] Session Startup（启动顺序）
-- [ ] Operating Loop（操作循环）
-- [ ] Tool Routing Rules（工具路由）
-- [ ] External Action Policy（外部动作审批）
-- [ ] Memory Writeback Rules（记忆写回）
-- [ ] Shared Context Rules（共享上下文）
-- [ ] Definition of Done（完成定义）
-- [ ] Failure Recovery（失败恢复）
-
-**SOUL.md 必须章节**：
-- [ ] Identity（身份感）
-- [ ] Tone（风格语气）
-- [ ] Boundaries（行为边界）
-
-**USER.md 必须章节**：
-- [ ] Master Base（用户基础信息）
-- [ ] Long-term Preferences（长期偏好）
-- [ ] Known Constraints（已知约束）
-
-**TOOLS.md 必须章节**：
-- [ ] Infrastructure（基础设施）
-- [ ] Credentials Pointers（凭证指针）
-- [ ] Cyberware Registry（工具寻址）
-- [ ] Local Traps（本地雷区）
-
-**MEMORY.md 必须章节**：
-- [ ] Memory System Overview（记忆系统综述）
-- [ ] LanceDB Query Guide（LanceDB 查询）
-- [ ] Memory Files Index（记忆文件索引）
-- [ ] Writeback Rules（写回规则）
-
-#### 4. 职责边界验证
-
-检测禁止内容并提示迁移：
-
-| 文件 | 禁止内容 | 迁移目标 |
-|------|---------|---------|
-| `AGENTS.md` | 人格描写、用户画像、项目流水账 | SOUL.md / USER.md / memory/ |
-| `SOUL.md` | 工具调用 SOP、短期状态 | AGENTS.md / memory/ |
-| `USER.md` | 今日待办、刚做完的任务 | memory/YYYY-MM-DD.md |
-| `TOOLS.md` | 工具完整文档、人格内容 | SKILL.md / SOUL.md |
-| `MEMORY.md` | 时间序列日志、大量过期上下文 | memory/YYYY-MM-DD.md |
-| `HEARTBEAT.md` | 长篇指令墙、复杂流程 | AGENTS.md / skill |
-
-#### 5. 质量打分
-
-每个核心文件从以下维度打分（0-10 分）：
-
-1. **职责清晰度** - 是否只承担单一职责
-2. **长度合理性** - 是否在推荐范围内
-3. **重叠度** - 与其他文件的内容重叠程度（越低越好）
-4. **过期内容** - 是否含有过期信息
-5. **层级正确性** - 短期内容是否误入长期层
-6. **长期规则完整性** - 是否缺失必要的长期规则
-7. **安全合规** - 是否包含不应公开的敏感信息
-8. **可维护性** - 是否便于未来修改和扩展
-
-**打分等级**：
-- **9-10 分**：优秀，无需修改 ✅
-- **7-8 分**：良好，可小幅优化 👍
-- **5-6 分**：及格，需要改进 ⚠️
-- **3-4 分**：不及格，需要大幅重构 ❌
-- **0-2 分**：严重问题，需要重新设计 💀
-
-### 手动验证命令
-
-```bash
-# 验证 Agent 核心文件质量
-node scripts/utils/validate-core-files.js <workspace-dir>
-
-# 完整配置验证
-agent-creator validate --agent-id <agent-id>
-```
-
-### 质量标准参考
-
-详细质量标准请查阅：[references/core-files-quality-standards.md](references/core-files-quality-standards.md)
+#### 审核清单
+- [ ] 是否能让陌生维护者一眼看懂“这个 Agent 是谁”？
+- [ ] 权限边界是否明确而非模糊？
+- [ ] 关系网络是否与 `USER.md` / `AGENTS.md` 一致？
 
 ---
 
-## 模板列表
+### C. `SOUL.md` —— 人格与行为边界文件
 
-| 模板 | 用途 | 核心文件预设 |
-|------|------|-------------|
-| `personal-assistant` | 个人日常助手 | 轻量 AGENTS + 温暖 SOUL |
-| `team-helper` | 团队协作助手 | 群聊规则 AGENTS + 专业 SOUL |
-| `coding-assistant` | 代码开发助手 | 工具路由 AGENTS + 技术型 SOUL |
-| `data-analyst` | 数据分析助手 | 工具密集 TOOLS + 分析型 SOUL |
-| `customer-service` | 客户服务助手 | 审批边界 AGENTS + 礼貌型 SOUL |
+#### 文件本质
+`SOUL.md` 负责回答：**这个 Agent 如何表现自己。**
 
----
+它定义风格、语气、核心信念、行为模式与不可逾越的内在边界。
 
-## 必备技能（16 个）
+#### 通用设计目标
+必须重点承载：
+- 人格稳定性
+- 行为一致性
+- 风格边界
+- 风险偏好中的人格部分
+- 对外/对内/对主人的模式切换
 
-创建 Agent 时自动安装的必备技能：
+#### 必须包含的结构
+1. `identity`
+2. `core_truths`
+3. `behavioral_modes`
+4. `speech_patterns`
+5. `emotional_triggers`（可选）
+6. `boundaries`
+7. `catchphrases`（可选）
+8. `embodiment_guide`
 
-### 记忆系统核心（4 个）
-- **lancedb-query** - LanceDB 向量检索
-- **memory-manager** - 记忆文件管理
-- **cron-manager** - 定时任务管理
-- **self-improving-agent** - 自我进化
+#### 设计重点
+- **行为边界要高于语言风格**：先定义不可以怎样，再定义如何说话。
+- **模式切换要明确**：对外、对内、对主人的风格不可混乱。
+- **人格要服务职责**：人格不是表演，而是稳定输出的控制层。
 
-### 基础工具（3 个）
-- **searxng-web-search** - 网络搜索
-- **agent-browser** - 浏览器自动化
-- **powershell** - PowerShell 支持
+#### 禁止混入
+- 工具调用流程
+- 项目级方法论
+- 短期待办
 
-### Agent 管理（4 个）
-- **skill-finder-cn** - 技能查找
-- **agent-config** - Agent 配置
-- **agent-team-orchestration** - 团队编排
-- **task-decomposer** - 任务分解
-- **skill-manager** - 技能管理
-
-### 通信与媒体（4 个）
-- **agent-bridge** - Agent 间通信
-- **xiaoqian-tts** - 语音合成
-- **volcengine-ark-asr** - 语音识别
-- **feishu-media** - 媒体处理
-
----
-
-## 配置示例
-
-### 个人助手配置
-
-```json
-{
-  "identity": {
-    "name": "学习助手",
-    "emoji": "📚",
-    "theme": "default"
-  },
-  "model": "bailian/qwen3.5-plus",
-  "workspace": "C:/Users/Administrator/.openclaw/workspace-study",
-  "files": {
-    "agents_md": "lightweight",
-    "soul_md": "warm",
-    "user_md": "template",
-    "memory_md": "index-only"
-  },
-  "skills": [
-    "lancedb-query",
-    "memory-manager",
-    "cron-manager",
-    "self-improving-agent",
-    "searxng-web-search",
-    "agent-browser",
-    "powershell",
-    "skill-finder-cn",
-    "agent-config",
-    "agent-team-orchestration",
-    "task-decomposer",
-    "skill-manager",
-    "agent-bridge",
-    "xiaoqian-tts",
-    "volcengine-ark-asr",
-    "feishu-media"
-  ]
-}
-```
+#### 审核清单
+- [ ] 人格是否能长期稳定，不依赖临场发挥？
+- [ ] 对外与对内的行为模式是否明确区分？
+- [ ] 行为边界是否足够具体，可真正约束输出？
 
 ---
 
-## 最佳实践
+### D. `USER.md` —— 用户对齐与传递文件
 
-### 文件职责原则
-1. **一个信息只有一个落点** - 不要重复写入多个文件
-2. **按变化速度分层** - 稳定的在常驻文件，易变的在日志
-3. **常驻上下文要薄** - 不要堆砌冗余背景故事
+#### 文件本质
+`USER.md` 负责回答：**这个 Agent 服务谁，以及如何稳定对齐这个人。**
 
-### 创建时机
-1. **命名规范**：Agent ID 使用小写字母、数字、连字符
-2. **工作区隔离**：每个 Agent 使用独立工作区
-3. **权限最小化**：只安装必要的技能
-4. **定期备份**：使用 `export` 命令定期备份
+#### 通用设计目标
+必须重点承载：
+- 用户/主人身份
+- 身份验证机制
+- 长期偏好
+- 输出偏好
+- 授权边界
+- 关注领域与雷区
 
-### 🚨 Gateway 配置注册（关键！）
-> ⚠️ **血泪教训** (2026-03-26)：创建 Agent 后**必须**完成 Gateway 配置注册，否则 Agent 无法真正上线！
+#### 必须包含的结构
+1. `master` / `user`
+2. `identity_verification`
+3. `permissions`
+4. `preferences`
+5. `focus_areas`
+6. `taboos`
 
-**完整流程**：
-1. ✅ 在 `openclaw.json` 的 `agents.list` 中注册 Agent
-2. ✅ 更新 `tools.agentToAgent.allow` 添加新 Agent（如需多 Agent 通信）
-3. ✅ 添加 `bindings` 配置（如需飞书支持）
-4. ✅ 重启 Gateway 使配置生效
-5. ✅ 验证新 Agent 可以正常响应
+#### 设计重点
+- **用户信息不是装饰，而是指令对齐层。**
+- **身份验证必须明确**：不能只凭昵称、自称判断。
+- **输出偏好必须稳定**：语言、结构、详细度、称呼等。
+- **权限来源要清晰**：谁能批准高风险操作。
 
-**常见错误**：
-- ❌ 只创建工作区文件，忘记配置注册 → Agent 无法上线
-- ❌ 使用错误的 gateway 工具参数（如 `restartDelayMs` 应为 `delayMs`）
-- ❌ 重启后不验证 → 可能配置有误但未发现
+#### 禁止混入
+- 一次性任务
+- 历史流水
+- 工具细节
 
-### 后续维护
-1. **每日**：更新 memory/YYYY-MM-DD.md
-2. **每周**：检查核心文件是否过厚，执行质量验证
-3. **每月**：清理过期内容，晋升有价值信息到 MEMORY.md
-
----
-
-## 自我改进规则
-
-> 📐 **架构师视角**：当 Agent 在运行中发现问题时，按以下规则进行结构性修复。
-
-### 发现"决策失误"时
-
-先问：这次失误属于哪一层？
-
-| 问题类型 | 修复目标 | 修复方式 |
-|---------|---------|---------|
-| 行为准则不清 | `AGENTS.md` | 增加明确规则 |
-| 人格边界不清 | `SOUL.md` | 补充边界说明 |
-| 用户偏好没记住 | `USER.md` / `MEMORY.md` | 记录偏好 |
-| 环境工具约定不清 | `TOOLS.md` | 补充约定 |
-| 当日上下文遗失 | `memory/YYYY-MM-DD.md` | 改进记录习惯 |
-| 长期结论未沉淀 | `MEMORY.md` / LanceDB | 写入长期记忆 |
-| 重复操作还靠临时发挥 | 新建 skill | 抽象为技能 |
-
-### 发现"重复出错"时
-
-必须至少做一件结构性修复：
-- ✅ 增加明确规则
-- ✅ 增加决策边界
-- ✅ 抽出独立 skill
-- ✅ 删除误导性旧规则
-- ✅ 为维护流程增加检查项
-
-### 发现"文件越来越胖"时
-
-立刻做瘦身：
-- ✅ 删除重复表述
-- ✅ 把例子改成规则
-- ✅ 把短期内容移到 daily log
-- ✅ 把专门流程拆 skill
-- ✅ 把长篇背景改成简洁原则
-
-### 发现"技能已与现实不符"时
-
-优先顺序：
-1. 修正文档
-2. 修正约束
-3. 修正示例
-4. 修正命名
+#### 审核清单
+- [ ] 是否清楚定义了服务对象和防伪机制？
+- [ ] 是否传递了长期稳定的输出偏好？
+- [ ] 是否避免把短期上下文误写成长期用户画像？
 
 ---
 
-## 质量门槛
+### E. `TOOLS.md` —— 工具环境与能力约定文件
 
-只有当以下条件大部分满足时，才可判断 Agent 创建成功：
+#### 文件本质
+`TOOLS.md` 负责回答：**这个 Agent 在什么环境里工作，应该如何理解和使用这些工具。**
 
-- ✅ 每个核心文件都可以用一句话准确描述职责
-- ✅ `AGENTS.md` 不再承担人格、用户画像和流水账职责
-- ✅ `MEMORY.md` 是蒸馏后的长期记忆，而不是时间序列日志
-- ✅ `memory/YYYY-MM-DD.md` 承担短期连续性
-- ✅ `HEARTBEAT.md` 足够短，可低成本运行
-- ✅ 重复性高的复杂流程已开始迁移到 skill
-- ✅ 工作区不存在明显过期、冲突或重复规则
-- ✅ 本次创建被记录到 memory/YYYY-MM-DD.md
-- ✅ **🔐 Gateway 配置已注册**（关键！）：
-  - `openclaw.json` 的 `agents.list` 已更新
-  - `agentToAgent.allow` 已更新（如需多 Agent 通信）
-  - `bindings` 已更新（如需飞书支持）
-  - Gateway 已重启
-  - 新 Agent 可以正常响应
+#### 通用设计目标
+必须重点承载：
+- 工作区路径约定
+- 工具路径与用途映射
+- 本地服务信息
+- 环境配置与陷阱
+- 命名、凭据与运行约定
+
+#### 必须包含的结构
+1. `paths`
+2. `tools`
+3. `services`
+4. `environment`
+5. （可选）`tool_pitfalls` / `local_conventions`
+
+#### 设计重点
+- **只写本 Agent 真正需要知道的工具约定。**
+- **强调工具路由，而不是复制完整工具文档。**
+- **记录环境雷区**：例如路径、编码、Shell、权限约束。
+
+#### 禁止混入
+- 人格描写
+- 用户画像
+- 日志记录
+
+#### 审核清单
+- [ ] 是否说明了本 Agent 的核心工具地图？
+- [ ] 是否避免成为冗长的“工具百科全书”？
+- [ ] 是否记录了真实会踩坑的环境信息？
+
+---
+
+### F. `MEMORY.md` —— 长期记忆协议文件
+
+#### 文件本质
+`MEMORY.md` 负责回答：**这个 Agent 如何形成长期连续性。**
+
+#### 通用设计目标
+必须重点承载：
+- 长期记忆的分层模型
+- 检索优先级
+- 写入规则
+- 晋升规则
+- 经验复用机制
+- durable 信息与短期日志的分工
+
+#### 必须包含的结构
+1. `overview`
+2. `lancedb_engine`
+3. `file_layer`
+4. `preferred_skills` / `preferred_retrieval`
+5. `iron_rules`
+6. `experience_reuse`
+7. `references`
+
+#### 设计重点
+- **长期记忆只保留跨会话仍有效的信息。**
+- **短期信息必须有其它落点，不可污染长期层。**
+- **记忆不是仓库堆积，而是蒸馏系统。**
+- **创建 Agent 时，必须先定义“什么值得记住”。**
+
+#### 禁止混入
+- 大量时间序列流水
+- 一次性临时上下文
+- 未经验证的猜测
+
+#### 审核清单
+- [ ] 是否区分了长期记忆与短期记录？
+- [ ] 是否明确了记忆检索触发点？
+- [ ] 是否定义了什么信息可以晋升为长期规则？
+
+---
+
+## 第 4 步：跨文件一致性校验
+
+六个核心文件写完后，必须进行逐项一致性校验。
+
+### 一致性检查维度
+
+#### 1. 身份一致性
+- `agent_id` / 名称 / 称呼是否一致
+- superior / master / owner 是否一致
+- 职责描述是否互相支撑而非冲突
+
+#### 2. 边界一致性
+- `AGENTS.md` 的安全红线是否与 `SOUL.md` / `IDENTITY.md` 的权限一致
+- `USER.md` 的授权项是否与 `AGENTS.md` 的审批链一致
+
+#### 3. 方法一致性
+- `AGENTS.md` 的 operating loop 是否与 `MEMORY.md` 的记忆流程兼容
+- `TOOLS.md` 的工具地图是否支持 `AGENTS.md` 的工具路由规则
+
+#### 4. 风格一致性
+- `SOUL.md` 的语气与 `USER.md` 规定的输出偏好是否兼容
+- `IDENTITY.md` 的角色定位是否能解释 `SOUL.md` 的人格风格
+
+### 硬性结论
+如果六个文件之间出现冲突，则**不得视为创建完成**。
+
+---
+
+## 第 5 步：完整创建的完成定义
+
+只有满足以下条件，才能判定一个 Agent 完整创建完成：
+
+### 文件层面
+- [ ] 六个核心文件全部存在
+- [ ] 六个文件均为 XML-first 结构
+- [ ] 每个文件都有明确根标签与职责边界
+
+### 架构层面
+- [ ] 已定义泛化任务完成标准
+- [ ] 已定义指导方法论与工作循环
+- [ ] 已定义安全红线、审批边界与身份验证机制
+- [ ] 已定义记忆系统与长期连续性方案
+- [ ] 已定义稳定的用户信息传递机制
+
+### 一致性层面
+- [ ] 六个文件之间无显著冲突
+- [ ] 权限、身份、风格、工具、记忆体系彼此兼容
+
+### 审慎性层面
+- [ ] 每个文件都经过逐项审核
+- [ ] 没有依赖自动脚本跳过思考
+- [ ] 没有将临时内容冒充为长期规则
+
+---
+
+## 本技能当前推荐工作流
+
+当用户要求“创建新 Agent”或“优化 Agent 创建流程”时，默认执行顺序应为：
+
+1. 先确认 Agent 的长期职责与存在价值
+2. 先定义完成标准、方法论、安全边界、记忆系统、用户传递机制
+3. 再建立六个核心文件骨架
+4. 再逐个设计六个核心文件
+5. 再做跨文件一致性校验
+6. 最后才进入附属文件、绑定配置、渠道接入、扩展技能等后续工作
+
+**结论**：
+在通用使用场景下，Agent 创建不是“先装技能”，也不是“先写人格”，而是 **先搭结构系统，再填充能力与风格。**
 
 ---
 
 ## 禁止事项
 
-- 🚫 不要为了"显得完整"而编造用户偏好、历史事实或长期记忆
-- 🚫 不要把敏感信息默认写入长期记忆
-- 🚫 不要在核心文件中直接写入明文密码或 API Key
-- 🚫 不要把 `HEARTBEAT.md` 写成第二个总指令文件
-- 🚫 不要把 `TOOLS.md` 当作技能目录全文备份
-- 🚫 不要在没有明确收益时新增大量 skill，造成技能清单膨胀
-- 🚫 不要保留明显互相矛盾的旧规则
-- 🚫 不要仅修当前问题而不修导致该问题反复出现的结构原因
-- 🚫 **不要只创建工作区文件而忘记 Gateway 配置注册**（2026-03-26 血泪教训）
-- 🚫 **不要使用错误的 gateway 工具参数**（`delayMs` 正确，`restartDelayMs` 错误）
+- 不得以脚本自动生成取代核心设计。
+- 不得跳过六个核心文件中的任一文件。
+- 不得把 `AGENTS.md` 写成混合杂货铺。
+- 不得把 `MEMORY.md` 写成流水账。
+- 不得把短期事项误写成长期偏好或长期规则。
+- 不得在未定义安全边界前先开放高危权限。
+- 不得在未定义用户验证机制前假定服务对象身份。
 
 ---
+
+## 本轮优化目标（v3）
+
+本版本相较前版，新增并强化：
+
+1. **融合核心文件架构方法**：将 Agent 创建从“手动指南”升级为“架构指南”。
+2. **明确 Agent 本质**：强调 Agent 是五层结构系统，而非单一 prompt。
+3. **硬性规定六核心文件**：完整创建必须包含 AGENTS / IDENTITY / SOUL / USER / TOOLS / MEMORY。
+4. **突出泛化设计重点**：完成标准、方法论、安全边界、记忆系统、用户信息传递。
+5. **强调跨文件一致性校验**：没有一致性，不算完成。
+
+---
+
+## 配套标准文档
+
+- `references/core-file-standards.md` - 六大核心文件的逐文件标准规范（职责 / 必填节点 / 推荐节点 / 禁止混入 / 审核清单 / 完成标准）
+- `references/core-file-xml-templates-blank.md` - T1 空白母板（极简 XML 骨架）
+- `references/core-file-xml-templates.md` - T2 基础通用 XML 模板母板（可直接起草）
+- `references/template-tier-system.md` - 四档模板体系（T1/T2/T3/T4）
+- `references/core-file-xml-templates-enhanced.md` - T4 增强版 XML 模板（参考主 Agent「千残狎」结构）
+- `references/scenario-specialization-flow.md` - 情景特化设计流程（含 agency-agents-zh 导引；从通用基准演化为不同领域 Agent 的流程）
+- `references/scenario-branch-templates.md` - 情景模板分支设计（工程 / 营销 / 管理 / 平台 / 研究分析等）
+- `references/agency-role-mapping.md` - branch × role 映射提炼（从 agency-agents-zh 代表角色映射到六核心文件）
+- `references/scenario-template-family.md` - 情景模板母板群（广度层收束产物）
+- `references/good-agent-formation-model.md` - 好 Agent 形成机制模型（深度层总骨架）
+- `references/user-painpoint-discovery-framework.md` - 用户痛点发现框架（从表层需求下潜到真实痛点）
+- `references/industry-depth-injection-model.md` - 行业深度注入模型（方法论 / 判断 / 失败模式 / 隐性知识替代结构）
+- `references/delivery-capable-agent-standard.md` - 交付型 Agent 标准（从回答升级到结果交付）
+- `references/deep-creation-flow.md` - 深度创建流程（将深度层正式接入主创建流程）
+- `references/final-audit-review-flow.md` - 末尾审计复核流程（对 Agent 与技能流程本身做最终检查）
+- `references/tier-decision-card.md` - 模板档位判定卡（帮助判断 T1/T2/T3/T4）
+- `references/audit-report-template.md` - 审计报告模板（标准化输出最终审计结果）
+- `references/branch-depth-interface.md` - 分支 × 深度层接口表（将深度设计下沉到各领域分支）
+- `references/multi-agent-communication-design.md` - 多 Agent 通信设计项（在创建阶段提前设计正式通信与 sub-agent 边界）
 
 ## 相关技能
 
-- **openclaw-core-files-architect** - 核心文件架构设计原则（本技能的核心参考）
-- **agent-config** - Agent 配置标准流程
-- **agent-team-orchestration** - 多 Agent 团队编排
-- **skill-manager** - 技能管理
-- **self-improving-agent** - 自我进化与反思
+- `openclaw_core_files_architect` - OpenClaw 核心文件架构方法
+- `agent-config` - Agent 配置标准流程
+- `agent-team-orchestration` - 多 Agent 团队编排
+- `agent-evaluation` - Agent 能力评估
 
 ---
 
-## 文件结构
-
-```
-agent-creator/
-├── SKILL.md                          # 本文件
-├── references/
-│   └── core-files-quality-standards.md  # 核心文件质量标准
-├── scripts/
-│   ├── create.js                     # 交互式创建向导
-│   ├── validate.js                   # 配置验证
-│   ├── templates/
-│   │   ├── common/                   # 通用高质量模板
-│   │   │   ├── AGENTS.md.template
-│   │   │   ├── SOUL.md.template
-│   │   │   ├── USER.md.template
-│   │   │   ├── TOOLS.md.template
-│   │   │   ├── MEMORY.md.template
-│   │   │   ├── HEARTBEAT.md.template
-│   │   │   ├── IDENTITY.md.template
-│   │   │   └── BOOTSTRAP.md.template
-│   │   ├── personal-assistant/       # 个人助手模板（可选覆盖）
-│   │   ├── team-helper/              # 团队助手模板
-│   │   ├── coding-assistant/         # 代码助手模板
-│   │   ├── data-analyst/             # 数据分析师模板
-│   │   └── customer-service/         # 客服助手模板
-│   └── utils/
-│       ├── file-generator.js         # 文件生成工具
-│       ├── config-validator.js       # 配置验证工具
-│       ├── validate-core-files.js    # 核心文件质量验证
-│       └── template-config.js        # 模板配置
-└── package.json
-```
-
----
-
-*技能版本 v3.1.1 (XML-First)*  
-*更新日期：2026-03-24*  
-*创建者：小千 👡*  
-*参考：openclaw-core-files-architect v2.0 (XML-First)*
+*技能版本 v3.0*  
+*优化日期：2026-03-28*  
+*优化者：素儿 🐙*
