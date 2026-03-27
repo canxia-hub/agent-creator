@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /**
- * Agent Creator - 交互式创建向导 v3.0
+ * Agent Creator - 交互式创建向导 v3.1.1
  * 
  * 功能：引导用户创建新的 OpenClaw Agent
  * 流程：输入信息 → 选择模板 → 生成配置 → 质量验证 → 安装技能 → 注册
  * 
- * v3.0 更新：
+ * v3.1.1 更新：
  * - 集成 openclaw-core-files-architect 质量标准
  * - 使用高质量模板系统
  * - 自动执行核心文件质量验证
@@ -174,6 +174,10 @@ function saveFiles(agentConfig) {
   results.warnings.forEach(({ file, reason }) => {
     console.log(`  ⚠️ 跳过 ${file}: ${reason}`);
   });
+
+  if (results.failed.length > 0) {
+    throw new Error(`核心文件生成失败: ${results.failed.map(({ file, reason }) => `${file}(${reason})`).join(', ')}`);
+  }
   
   // 初始化 memory/ 目录
   console.log('\n📁 初始化记忆系统目录...');

@@ -3,7 +3,7 @@ name: agent-creator
 description: "Agent 创建向导技能。帮助用户快速、规范地创建新的 OpenClaw Agent，包括生成核心配置文件、配置飞书应用、设置工作区、安装必备技能、验证配置完整性。Use when: (1) 创建新 Agent, (2) 配置 Agent 身份和人格, (3) 设置飞书机器人, (4) 配置多 Agent 路由, (5) 安装 Agent 必备技能"
 metadata:
   author: 小千 (Xiao Qian)
-  version: "3.1.0"
+  version: "3.1.1"
   tags: agent create setup feishu skills install quality architect xml-first
   category: system
   requires:
@@ -85,8 +85,9 @@ metadata:
 - 🦞 **飞书集成**：自动配置飞书机器人应用和权限
 - 🔄 **多 Agent 路由**：配置 bindings 实现消息路由
 - 🧩 **技能自动安装**：一键安装必备技能
-- ✅ **质量验证**：自动验证配置完整性、文件质量并注册到 Gateway
+- ✅ **质量验证**：自动验证配置完整性、文件质量
 - 🔍 **架构师诊断**：创建后自动执行质量打分，确保符合标准
+- 🔐 **Gateway 注册**：**关键！** 自动引导配置 openclaw.json，确保新 Agent 真正上线
 
 ---
 
@@ -98,7 +99,7 @@ metadata:
 agent-creator create
 ```
 
-**流程**：
+**完整流程**：
 1. 输入 Agent 名称
 2. 选择表情符号
 3. 选择用途模板
@@ -106,6 +107,12 @@ agent-creator create
 5. 选择必备技能（默认全选）
 6. 选择可选技能
 7. 确认创建 → **自动生成高质量核心文件（默认 XML 格式）**
+8. **🔐 Gateway 配置注册**（关键！）：
+   - 在 `openclaw.json` 的 `agents.list` 中注册
+   - 更新 `agentToAgent.allow`（如需多 Agent 通信）
+   - 添加 `bindings`（如需飞书支持）
+   - 重启 Gateway
+9. **✅ 验证上线**：确认新 Agent 可以正常响应
 
 ---
 
@@ -498,6 +505,127 @@ memory/
 
 ---
 
+### 第 11 步：Gateway 配置注册（关键！让 Agent 真正上线）
+
+> ⚠️ **血泪教训** (2026-03-26)：创建 Agent 后**必须**在 `openclaw.json` 中注册配置，否则 Agent 无法真正上线使用！
+
+#### 11.1 注册 Agent 到 agents.list
+
+编辑 `C:\Users\Administrator\.openclaw\openclaw.json`，在 `agents.list` 数组中添加新 Agent：
+
+```json
+{
+  "id": "<agent-id>",
+  "workspace": "C:\\Users\\Administrator\\.openclaw\\workspace\\<agent-id>",
+  "agentDir": "C:\\Users\\Administrator\\.openclaw\\agents\\<agent-id>",
+  "model": "bailian/qwen3.5-plus",
+  "identity": {
+    "name": "<Agent 名称>",
+    "emoji": "<表情符号>",
+    "avatar": "C:\\Users\\Administrator\\.openclaw\\workspace\\<agent-id>\\avatars\\<agent-id>_avatar.png"
+  },
+  "tools": {
+    "allow": [
+      "skill-1",
+      "skill-2",
+      "skill-3"
+    ]
+  }
+}
+```
+
+**字段说明**：
+- `id`: Agent 唯一标识（小写字母 + 数字 + 连字符）
+- `workspace`: 工作区绝对路径
+- `agentDir`: Agent 配置目录（可选，用于独立 agent 目录）
+- `model`: 默认模型（推荐 `bailian/qwen3.5-plus`）
+- `identity.name`: Agent 显示名称
+- `identity.emoji`: 表情符号
+- `identity.avatar`: 头像路径（可选）
+- `tools.allow`: 允许使用的技能列表（可选，不填则使用默认）
+
+#### 11.2 更新 agentToAgent.allow（多 Agent 通信）
+
+如果新 Agent 需要与其他 Agent 通信，更新 `tools.agentToAgent.allow`：
+
+```json
+"agentToAgent": {
+  "enabled": true,
+  "allow": [
+    "main",
+    "su-er",
+    "<新 agent-id>"
+  ]
+}
+```
+
+#### 11.3 添加飞书绑定（飞书渠道支持）
+
+如果需要在飞书渠道使用新 Agent，添加 binding：
+
+```json
+"bindings": [
+  {
+    "agentId": "<agent-id>",
+    "match": {
+      "channel": "feishu",
+      "accountId": "default"
+    }
+  }
+]
+```
+
+#### 11.4 重启 Gateway 使配置生效
+
+**方式一：使用 gateway 工具（推荐）**
+```json
+{
+  "action": "restart",
+  "delayMs": 3000,
+  "note": "<新 Agent 名称> 正式注册完成，配置已更新并重启网关"
+}
+```
+
+**方式二：使用 CLI 命令**
+```bash
+openclaw gateway restart
+```
+
+**⚠️ 参数注意**：
+- 使用 `delayMs` 而不是 `restartDelayMs`（后者不存在）
+- `note` 参数必填，用于重启后通知用户
+
+#### 11.5 验证 Agent 已上线
+
+重启完成后，验证新 Agent 是否可以正常使用：
+
+```bash
+# 检查 Gateway 状态
+openclaw gateway status
+
+# 检查 Agent 列表（飞书渠道）
+# 或在飞书中尝试 @新 Agent 名称
+```
+
+---
+
+### 第 12 步：质量验证与交付
+
+完成上述所有步骤后，执行最终验证：
+
+#### 验证清单
+
+- [ ] 工作区目录已创建
+- [ ] 4 个核心文件已生成（AGENTS.md/SOUL.md/TOOLS.md/MEMORY.md）
+- [ ] memory/目录结构已初始化
+- [ ] openclaw.json 已更新 agents.list
+- [ ] agentToAgent.allow 已更新（如需多 Agent 通信）
+- [ ] bindings 已更新（如需飞书支持）
+- [ ] Gateway 已重启
+- [ ] 新 Agent 可以正常响应
+
+---
+
 ## 核心文件质量检查与验证
 
 > 📐 **架构师集成**：本技能已集成 `openclaw-core-files-architect` 的质量标准，在创建 Agent 时自动执行质量验证。
@@ -703,6 +831,21 @@ agent-creator validate --agent-id <agent-id>
 3. **权限最小化**：只安装必要的技能
 4. **定期备份**：使用 `export` 命令定期备份
 
+### 🚨 Gateway 配置注册（关键！）
+> ⚠️ **血泪教训** (2026-03-26)：创建 Agent 后**必须**完成 Gateway 配置注册，否则 Agent 无法真正上线！
+
+**完整流程**：
+1. ✅ 在 `openclaw.json` 的 `agents.list` 中注册 Agent
+2. ✅ 更新 `tools.agentToAgent.allow` 添加新 Agent（如需多 Agent 通信）
+3. ✅ 添加 `bindings` 配置（如需飞书支持）
+4. ✅ 重启 Gateway 使配置生效
+5. ✅ 验证新 Agent 可以正常响应
+
+**常见错误**：
+- ❌ 只创建工作区文件，忘记配置注册 → Agent 无法上线
+- ❌ 使用错误的 gateway 工具参数（如 `restartDelayMs` 应为 `delayMs`）
+- ❌ 重启后不验证 → 可能配置有误但未发现
+
 ### 后续维护
 1. **每日**：更新 memory/YYYY-MM-DD.md
 2. **每周**：检查核心文件是否过厚，执行质量验证
@@ -768,6 +911,12 @@ agent-creator validate --agent-id <agent-id>
 - ✅ 重复性高的复杂流程已开始迁移到 skill
 - ✅ 工作区不存在明显过期、冲突或重复规则
 - ✅ 本次创建被记录到 memory/YYYY-MM-DD.md
+- ✅ **🔐 Gateway 配置已注册**（关键！）：
+  - `openclaw.json` 的 `agents.list` 已更新
+  - `agentToAgent.allow` 已更新（如需多 Agent 通信）
+  - `bindings` 已更新（如需飞书支持）
+  - Gateway 已重启
+  - 新 Agent 可以正常响应
 
 ---
 
@@ -781,6 +930,8 @@ agent-creator validate --agent-id <agent-id>
 - 🚫 不要在没有明确收益时新增大量 skill，造成技能清单膨胀
 - 🚫 不要保留明显互相矛盾的旧规则
 - 🚫 不要仅修当前问题而不修导致该问题反复出现的结构原因
+- 🚫 **不要只创建工作区文件而忘记 Gateway 配置注册**（2026-03-26 血泪教训）
+- 🚫 **不要使用错误的 gateway 工具参数**（`delayMs` 正确，`restartDelayMs` 错误）
 
 ---
 
@@ -829,7 +980,7 @@ agent-creator/
 
 ---
 
-*技能版本 v3.1 (XML-First)*  
+*技能版本 v3.1.1 (XML-First)*  
 *更新日期：2026-03-24*  
 *创建者：小千 👡*  
 *参考：openclaw-core-files-architect v2.0 (XML-First)*
