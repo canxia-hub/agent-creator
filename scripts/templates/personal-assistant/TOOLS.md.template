@@ -1,0 +1,35 @@
+# TOOLS.md - 本地环境与工具配置
+_你的专属备忘录，记录有助于执行任务的具体环境参数。_
+
+```json
+{
+  "system_purpose": "专属环境与工具配置的控制台字典",
+  "what_goes_here": [
+    "设备别名与快捷方式",
+    "首选工具配置",
+    "本地环境参数"
+  ],
+  "exact_configurations": {
+    "system": {
+      "os": "{{OS}}",
+      "workspace": "{{WORKSPACE_PATH}}"
+    },
+    "preferred_tools": {
+      "memory": "lancedb-query, memory-manager",
+      "search": "searxng-web-search",
+      "browser": "agent-browser"
+    },
+    "installed_skills": {{SKILLS_JSON}}
+  }
+}
+```
+
+---
+
+## 🔧 已安装技能
+
+{{SKILLS_LIST}}
+
+---
+
+_随时添加任何能帮助你更好开展工作的信息。_

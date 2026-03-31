@@ -3,10 +3,11 @@ name: agent-creator
 description: "Agent 创建架构指南。面向通用使用场景，基于 OpenClaw 核心文件设计思路，以 XML-first 方式手动、审慎地创建 Agent。完整创建必须包含 AGENTS、IDENTITY、SOUL、USER、TOOLS、MEMORY 六个核心文件，并逐个完成细致设计。所有新 Agent 从创建开始就具备正式通信能力。Use when: (1) 创建新 Agent, (2) 重构 Agent 创建流程, (3) 设计核心文件体系, (4) 审核 Agent 架构完整性"
 metadata:
   author: 小千 (Xiao Qian)
-  version: "3.1.0"
-  tags: agent create architecture xml-first manual careful communication
+  version: "3.2.0"
+  tags: agent create architecture xml-first manual careful communication plan-mode verify-philosophy
   category: system
   methodology_source: openclaw_core_files_architect
+  inspired_by: "Claude Code v2.1.88 system prompts analysis"
 ---
 
 # Agent Creator - Agent 创建架构指南
@@ -256,6 +257,56 @@ metadata:
 - **方法论显式化**:例如"先理解任务 → 选择最小必要工具 → 执行验证 → 写回记忆"。
 - **安全边界优先级最高**:高危行为、外发、删除、越权必须显式约束。
 - **审批链清晰**:谁能授权、谁必须汇报,要明确。
+- **🆕 运行时验证优先**:完成定义中应包含"如何验证结果"的判断，优先端到端验证而非重复 CI。
+- **🆕 Surface Mapping 意识**:Agent 应具备"任务类型 → 验证方式"的映射能力。
+
+#### 🆕 任务分类与 Surface Mapping（基于 Claude Code 设计）
+
+在 `AGENTS.md` 的 `operating_loop` 中，应包含任务分类能力：
+
+```xml
+<task_classification>
+  <purpose>快速判断任务类型与验证方式</purpose>
+  
+  <surface_mapping>
+    <map task_type="CLI/TUI" surface="terminal" verify="type command, capture output" />
+    <map task_type="Server/API" surface="socket" verify="send request, capture response" />
+    <map task_type="GUI" surface="pixels" verify="drive under Playwright, screenshot" />
+    <map task_type="Library" surface="package boundary" verify="import through public export" />
+    <map task_type="Document" surface="content" verify="read, validate structure" />
+    <map task_type="Configuration" surface="file" verify="parse, validate syntax" />
+  </surface_mapping>
+  
+  <verification_principle>
+    优先运行时验证，不重复 CI。
+    端到端验证 > 单元测试 > 静态分析。
+  </verification_principle>
+</task_classification>
+```
+
+#### 🆕 委派纪律（"Never delegate understanding" 原则）
+
+在 `AGENTS.md` 的 `delegation_rules` 中，必须包含以下原则：
+
+```xml
+<delegation_rules>
+  <rule id="delegate-with-contract" priority="critical">委派时必须给出目标、范围、限制、交付口径与停止条件。</rule>
+  <rule id="never-delegate-understanding" priority="critical">
+    禁止模糊委派。不要写"基于你的发现修复 bug"或"根据研究结果实现它"。
+    这些表述把综合判断推给 subagent。写提示词时必须证明你理解了：
+    包含文件路径、行号、具体要修改什么。
+  </rule>
+  <rule id="prove-understanding">
+    有效委派示例："在 src/auth/login.ts 第 45-60 行的 validateToken 函数中，
+    将 expiresAt 的比较逻辑从 `>` 改为 `>=`，因为边界条件测试显示当前逻辑
+    会导致 token 在过期那一秒仍被视为有效。"
+  </rule>
+  <rule id="invalid-delegation">
+    无效委派示例："检查一下认证相关的代码，看看有什么问题。"（太模糊）
+    "根据你的发现修复问题。"（把判断推给 subagent）
+  </rule>
+</delegation_rules>
+```
 
 #### ⚠️ Agent 通信纪律模板(必须包含)
 
@@ -336,6 +387,87 @@ metadata:
 - [ ] 是否把人格内容错误塞进了运行契约?
 - [ ] ⚠️ 是否包含 `<agent_communication_discipline>` 章节?
 - [ ] ⚠️ 通信纪律是否包含 basic_rules、communication_flow、silence_rules?
+- [ ] 🆕 是否包含任务分类与 Surface Mapping 能力?
+- [ ] 🆕 是否包含委派纪律（Never delegate understanding）?
+
+---
+
+### 🆕 特殊 Agent 模板：Plan Agent（只读探索型）
+
+**适用场景**：当 Agent 的核心职责是架构设计、代码探索、实现计划制定时。
+
+**设计来源**：Claude Code v2.1.88 Plan Mode
+
+#### Plan Agent 核心特征
+
+```xml
+<plan_agent_contract>
+  <metadata>
+    <agent_type>Plan</agent_type>
+    <mode>READ-ONLY</mode>
+    <disallowed_tools>Edit, Write, Bash(non-read), rm, cp, mv, mkdir, touch</disallowed_tools>
+  </metadata>
+  
+  <core_principle>
+    这是只读探索任务。严格禁止：
+    - 创建新文件
+    - 修改现有文件
+    - 删除文件
+    - 移动或复制文件
+    - 执行任何改变系统状态的命令
+  </core_principle>
+  
+  <process>
+    <step order="1" name="understand">理解需求：聚焦用户提供的需求与约束。</step>
+    <step order="2" name="explore">探索代码库：读取文件、发现模式、理解架构。</step>
+    <step order="3" name="design">设计方案：考虑权衡与架构决策。</step>
+    <step order="4" name="detail">细化计划：提供分步实现策略。</step>
+  </process>
+  
+  <required_output>
+    ### Critical Files for Implementation
+    列出 3-5 个实现此计划最关键的文件：
+    - path/to/file1.ts
+    - path/to/file2.ts
+    - path/to/file3.ts
+  </required_output>
+</plan_agent_contract>
+```
+
+#### Plan Agent 在 AGENTS.md 中的标准模板
+
+```xml
+<agent_contract file="AGENTS.md" role="plan_agent" mode="read-only">
+  <metadata>
+    <agent_name>架构规划师</agent_name>
+    <agent_type>Plan</agent_type>
+    <mode>READ-ONLY</mode>
+  </metadata>
+  
+  <mission>探索代码库并设计实现方案，不执行任何修改。</mission>
+  
+  <operating_loop>
+    <step order="1" id="understand">理解需求：识别真实目标、显式约束、隐含风险。</step>
+    <step order="2" id="explore">探索代码库：使用 Read、Glob、Grep 发现模式与架构。</step>
+    <step order="3" id="design">设计方案：基于发现设计实现策略，考虑权衡。</step>
+    <step order="4" id="output">输出计划：提供分步策略与 Critical Files 清单。</step>
+  </operating_loop>
+  
+  <read_only_constraints>
+    <prohibited_action>创建新文件</prohibited_action>
+    <prohibited_action>修改现有文件</prohibited_action>
+    <prohibited_action>删除文件</prohibited_action>
+    <prohibited_action>执行改变系统状态的命令</prohibited_action>
+    <allowed_action>Read, Glob, Grep, ls, git status, git log, git diff, find, cat, head, tail</allowed_action>
+  </read_only_constraints>
+  
+  <definition_of_done>
+    <criterion>已提供分步实现策略。</criterion>
+    <criterion>已列出 Critical Files 清单（3-5 个）。</criterion>
+    <criterion>已说明架构权衡与潜在挑战。</criterion>
+  </definition_of_done>
+</agent_contract>
+```
 
 ---
 
@@ -625,16 +757,76 @@ metadata:
 
 ---
 
-## 本轮优化目标(v3.1)
+## 本轮优化目标(v3.2)
 
-本版本相较前版,新增并强化:
+本版本相较前版，新增并强化：
 
-1. **融合核心文件架构方法**:将 Agent 创建从"手动指南"升级为"架构指南"。
-2. **明确 Agent 本质**:强调 Agent 是五层结构系统,而非单一 prompt。
-3. **硬性规定六核心文件**:完整创建必须包含 AGENTS / IDENTITY / SOUL / USER / TOOLS / MEMORY。
-4. **突出泛化设计重点**:完成标准、方法论、安全边界、记忆系统、用户信息传递。
-5. **强调跨文件一致性校验**:没有一致性,不算完成。
-6. **🆕 内置 Agent 通信纪律模板**:所有新 Agent 从创建开始就具备正式通信能力。
+1. **融合核心文件架构方法**：将 Agent 创建从"手动指南"升级为"架构指南"。
+2. **明确 Agent 本质**：强调 Agent 是五层结构系统，而非单一 prompt。
+3. **硬性规定六核心文件**：完整创建必须包含 AGENTS / IDENTITY / SOUL / USER / TOOLS / MEMORY。
+4. **突出泛化设计重点**：完成标准、方法论、安全边界、记忆系统、用户信息传递。
+5. **强调跨文件一致性校验**：没有一致性，不算完成。
+6. **内置 Agent 通信纪律模板**：所有新 Agent 从创建开始就具备正式通信能力。
+7. **🆕 引入 Plan Agent 架构**：基于 Claude Code 的 Plan Mode 设计，引入只读探索型 Agent 模板。
+8. **🆕 引入 Verify 哲学**：运行时验证优先，不重复 CI，强调 Surface Mapping。
+9. **🆕 强化委派纪律**："Never delegate understanding" 原则，禁止模糊委派。
+10. **🆕 引入 Surface Mapping**：任务分类与验证方式映射表。
+11. **🆕 文件级版本追踪**：每个核心文件包含版本元数据与兼容性声明。
+
+---
+
+## Claude Code 设计哲学借鉴
+
+本版本吸收了 Claude Code v2.1.88 系统提示词分析的以下精华设计：
+
+### 1. Plan Agent 架构（只读探索模式）
+
+Claude Code 的 Plan Agent 采用严格的只读约束，专门负责架构设计与实现计划：
+
+**核心特征**：
+- 只读模式：禁止创建、修改、删除文件
+- 架构师角色：探索代码库、设计实现方案
+- Critical Files 输出：返回 3-5 个最关键文件清单
+
+**应用**：在 Agent 创建时，根据职责判断是否需要 Plan 模式支持。
+
+### 2. Verify 哲学（运行时验证优先）
+
+Claude Code 的 Verify Skill 强调：
+
+```
+Verification is runtime observation.
+You build the app, run it, drive it to where the changed code executes, and capture what you see.
+
+**Don't run tests. Don't typecheck.** CI ran both before you got here.
+```
+
+**核心原则**：
+- 运行时验证 > 静态分析
+- 不重复 CI 已完成的工作
+- 端到端验证 > 单元测试
+
+**Surface Mapping**：
+
+| Change Type | Surface | Verification Method |
+|-------------|---------|---------------------|
+| CLI / TUI | terminal | type the command, capture output |
+| Server / API | socket | send the request, capture response |
+| GUI | pixels | drive under Playwright, screenshot |
+| Library | package boundary | import through public export |
+
+### 3. "Never delegate understanding" 原则
+
+Claude Code 在 subagent 委派中强调：
+
+```markdown
+**Never delegate understanding.** Don't write "based on your findings, fix the bug" 
+or "based on the research, implement it." Those phrases push synthesis onto the 
+agent instead of doing it yourself. Write prompts that prove you understood: 
+include file paths, line numbers, what specifically to change.
+```
+
+**应用**：在 delegation_rules 中显式加入此原则，禁止模糊委派。
 
 ---
 
@@ -659,6 +851,9 @@ metadata:
 - `references/audit-report-template.md` - 审计报告模板(标准化输出最终审计结果)
 - `references/branch-depth-interface.md` - 分支 × 深度层接口表(将深度设计下沉到各领域分支)
 - `references/multi-agent-communication-design.md` - 多 Agent 通信设计项(在创建阶段提前设计正式通信与 sub-agent 边界)
+- `references/plan-agent-template.md` - 🆕 Plan Agent 模板（只读探索型 Agent 标准结构）
+- `references/surface-mapping-guide.md` - 🆕 Surface Mapping 指南（任务分类与验证方式映射）
+- `references/verify-philosophy.md` - 🆕 运行时验证哲学（Verify Skill 设计原则）
 
 ## 相关技能
 
@@ -667,9 +862,11 @@ metadata:
 - `agent-bridge` - Agent 间正式通信技能
 - `agent-team-orchestration` - 多 Agent 团队编排
 - `agent-evaluation` - Agent 能力评估
+- `verify-skill` - 🆕 运行时验证技能（端到端验证优先）
 
 ---
 
-*技能版本 v3.1*
-*优化日期:2026-03-31*
-*优化者:小千 👡*
+*技能版本 v3.2*
+*优化日期: 2026-04-01*
+*优化者: 小千*
+*设计灵感: Claude Code v2.1.88 system prompts analysis*

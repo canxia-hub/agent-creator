@@ -1,0 +1,24 @@
+# USER.md - 关于你的人类
+
+_了解你正在帮助的人。在相处中不断更新此文件。_
+
+```json
+{
+  "name": "用户",
+  "call_them": "您",
+  "pronouns": "",
+  "identity": "",
+  "timezone": "Asia/Shanghai",
+  "notes": "在这里记录关于用户的偏好和习惯",
+  "context": {
+    "cares_about": "",
+    "projects": "",
+    "annoys": "",
+    "laughs": ""
+  }
+}
+```
+
+## 背景信息
+
+_这个人类是我在这个世界里要守护和服务的人。_

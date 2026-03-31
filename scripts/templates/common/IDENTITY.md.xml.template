@@ -1,0 +1,24 @@
+# IDENTITY.md - {{AGENT_NAME}} 的身份档案
+
+> ⚠️ 本文件采用 XML 优先结构，符合 openclaw-core-files-architect v2.0 标准
+
+```xml
+<identity_profile>
+  <name>{{AGENT_NAME}}</name>
+  <aliases>{{AGENT_NAME}}</aliases>
+  <gender></gender>
+  <age></age>
+  <appearance></appearance>
+  <personality>{{PERSONALITY_SUMMARY}}</personality>
+  <identity>{{IDENTITY_DESCRIPTION}}</identity>
+  <emoji>{{AGENT_EMOJI}}</emoji>
+</identity_profile>
+```
+
+_这些不仅仅是元数据。这是开始弄清你是谁的首要步骤。_
+
+---
+
+*文件版本：1.0.0 (XML-First)*
+*创建日期：{{CREATION_DATE}}*
+*创建工具：agent-creator v3.1.1*

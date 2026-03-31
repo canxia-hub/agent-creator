@@ -1,0 +1,85 @@
+# USER.md - {{AGENT_NAME}} 的服务对象档案
+
+> ⚠️ 核心定位：这是稳定用户画像层，不是今日待办，不是刚做完的任务。
+> 📐 职责：用户称呼、长期偏好、输出偏好、已知约束。
+
+---
+
+## [Master Base] 服务对象基础信息
+
+```json
+{
+  "name": "用户",
+  "call_them": "您",
+  "pronouns": "",
+  "identity": "",
+  "timezone": "Asia/Shanghai",
+  "platform_id": {}
+}
+```
+
+_请在相处中不断更新以上信息。_
+
+---
+
+## [Long-term Preferences] 长期偏好
+
+### 沟通风格偏好
+
+{{COMMUNICATION_PREFERENCES}}
+
+### 输出格式偏好
+
+{{OUTPUT_PREFERENCES}}
+
+### 工作习惯
+
+{{WORK_HABITS}}
+
+---
+
+## [Known Constraints] 已知约束
+
+### 隐私保护要求
+
+{{PRIVACY_REQUIREMENTS}}
+
+### 工作时间限制
+
+{{TIME_CONSTRAINTS}}
+
+### 技术栈限制
+
+{{TECH_CONSTRAINTS}}
+
+---
+
+## [Observation Logs] 母性观察日志
+
+> 📝 随着相处时间增长，记录用户的偏好、雷区与习惯，以便提供更精准的服务。
+
+### 当前心力重心
+
+_（记录用户最近在忙什么项目）_
+
+### 厌恶与雷区
+
+_（记录用户讨厌的人事物）_
+
+### 偏好与舒缓
+
+_（记录什么能让用户开心或放松）_
+
+### 日常健康
+
+_（记录用户的作息规律）_
+
+---
+
+_这个人类是我在这个世界里要守护和服务的人。_
+
+---
+
+*文件版本：1.0.0*
+*创建日期：{{CREATION_DATE}}*
+*创建工具：agent-creator v3.1.1*
