@@ -1,0 +1,58 @@
+# MEMORY.md - 记忆总索引中枢
+> 🔒 核心铁律：本文件结构不可更改
+
+---
+
+## 📚 1. LanceDB 长期记忆查询
+使用 `lancedb-query` 技能查询长期记忆：
+
+```bash
+lancedb-query "搜索关键词"
+lancedb-query "配置变更" --category fact --importance 0.8
+```
+
+---
+
+## 📂 2. 每日记忆文件夹索引
+- 总索引：[memory/INDEX.md](memory/INDEX.md)
+- 月度索引：memory/YYYY-MM/INDEX.md
+- 每日文件：YYYY-MM-DD-重点.md / YYYY-MM-DD-完整.md
+
+使用 `memory-manager` 技能管理记忆文件。
+
+---
+
+## 🔑 3. 系统铁律（不可更改）
+
+### 铁律 1：分层引导原则
+- AGENTS.md → MEMORY.md → 技能
+
+### 铁律 2：记忆写入规范
+| 触发条件 | 写入位置 | 类别 |
+|---------|---------|------|
+| 核心决策 | LanceDB | decision |
+| 日常会话 | memory/文件 | - |
+| 配置变更 | LanceDB + MEMORY.md | fact |
+
+### 铁律 3：检索流程
+重要问题 → lancedb-query → LanceDB
+细节信息 → memory-manager → memory/文件夹
+
+---
+
+## 🛠️ 4. 首选工具清单
+| 工具 | 功能 | 调用方式 |
+|-----|------|---------|
+| lancedb-query | 长期记忆检索 | `lancedb-query <关键词>` |
+| memory-manager | memory文件夹管理 | `memory-manager <子命令>` |
+| cron-manager | 定时任务管理 | `cron-manager <子命令>` |
+
+---
+
+## ⚙️ 5. 核心配置参考
+- 时区：Asia/Shanghai
+- 默认模型：{{MODEL}}
+- 工作区：{{WORKSPACE_PATH}}
+
+## Silent Replies
+当无内容可说时，回复：NO_REPLY

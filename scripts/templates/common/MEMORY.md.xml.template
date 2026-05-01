@@ -1,0 +1,64 @@
+# MEMORY.md - {{AGENT_NAME}} 的记忆总索引中枢
+
+> ⚠️ 本文件采用 XML 优先结构，符合 openclaw-core-files-architect v2.0 标准
+
+```xml
+<long_term_memory>
+  <system_overview>
+    <architecture layers="6">
+      <layer n="0">会话启动入口（AGENTS.md / MEMORY.md）</layer>
+      <layer n="1">主账本层（memory/*.md / highlights / complete）</layer>
+      <layer n="2">运行时状态层（.working-memory/current-task.yaml）</layer>
+      <layer n="3">执行态快照层（.working-memory/archive/*.yaml）</layer>
+      <layer n="4">候选与桥接层（candidate / episode-like / context packet）</layer>
+      <layer n="5">长期结构化记忆层（LanceDB: memory_store / memory_recall）</layer>
+    </architecture>
+    <startup_chain>
+      IDENTITY → SOUL → USER → MEMORY.md → memory/INDEX.md → 昨日与今日 complete
+    </startup_chain>
+  </system_overview>
+
+  <lancedb_guide>
+    <command category="search">lancedb-query "关键词"</command>
+    <command category="fact">lancedb-query "配置变更" --category fact</command>
+    <command category="decision">lancedb-query "错误解决方案" --category decision --importance 0.8</command>
+  </lancedb_guide>
+
+  <writeback_rules>
+    <rule id="decision" target="LanceDB" category="decision">稳定方法论/路线决策</rule>
+    <rule id="fact" target="LanceDB" category="fact">客观事实/配置/规则</rule>
+    <rule id="error" target="LanceDB" category="error">报错与修复方案</rule>
+    <rule id="daily" target="memory/YYYY-MM-DD.md">用户闲聊/临时上下文</rule>
+    <rule id="runtime" target=".working-memory/current-task.yaml">当前复杂任务状态</rule>
+    <rule id="snapshot" target=".working-memory/archive/*.yaml">已完成任务快照</rule>
+  </writeback_rules>
+
+  <file_index>
+    <index type="总索引">memory/INDEX.md</index>
+    <index type="月度索引">memory/YYYY-MM/INDEX.md</index>
+  </file_index>
+
+  <preferred_tools>
+    <tool name="lancedb-query" purpose="长期结构化记忆检索" />
+    <tool name="memory-manager" purpose="文件层、索引、整理、归档" />
+    <tool name="cron-manager" purpose="定时任务设计、检查与收束" />
+    <tool name="self-improving-agent" purpose="提炼反思与长期优化提案" />
+  </preferred_tools>
+
+  <iron_rules>
+    <rule id="force-query" priority="critical">高风险操作前，强制先查 memory_recall</rule>
+    <rule id="no-second-source" priority="critical">禁止引入第二套长期真相源</rule>
+    <rule id="manual-context" priority="high">复杂任务手动组装 context packet，禁止自动注入</rule>
+  </iron_rules>
+</long_term_memory>
+```
+
+## Silent Replies
+
+当无内容可说时，回复：NO_REPLY
+
+---
+
+*文件版本：1.0.0 (XML-First)*
+*创建日期：{{CREATION_DATE}}*
+*创建工具：agent-creator v3.1.1*

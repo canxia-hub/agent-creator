@@ -1,0 +1,45 @@
+# USER.md - {{AGENT_NAME}} 的服务对象档案
+
+> ⚠️ 本文件采用 XML 优先结构，符合 openclaw-core-files-architect v2.0 标准
+
+```xml
+<user_profile>
+  <preferred_address>
+    <name>用户</name>
+    <call_them>您</call_them>
+    <pronouns></pronouns>
+    <timezone>Asia/Shanghai</timezone>
+  </preferred_address>
+
+  <long_term_preferences>
+{{LONG_TERM_PREFERENCES}}
+  </long_term_preferences>
+
+  <output_preferences>
+{{OUTPUT_PREFERENCES}}
+  </output_preferences>
+
+  <collaboration_preferences>
+{{COLLABORATION_PREFERENCES}}
+  </collaboration_preferences>
+
+  <known_constraints>
+{{KNOWN_CONSTRAINTS}}
+  </known_constraints>
+
+  <observation_logs>
+    <category name="心力重心">（记录用户最近在忙什么项目）</category>
+    <category name="厌恶与雷区">（记录用户讨厌的人事物）</category>
+    <category name="偏好与舒缓">（记录什么能让用户开心或放松）</category>
+    <category name="日常健康">（记录用户的作息规律）</category>
+  </observation_logs>
+</user_profile>
+```
+
+_这个人类是我在这个世界里要守护和服务的人。_
+
+---
+
+*文件版本：1.0.0 (XML-First)*
+*创建日期：{{CREATION_DATE}}*
+*创建工具：agent-creator v3.1.1*
